@@ -31,7 +31,7 @@
   <li> Make this 256x256 image into a 2048x2048 one by creating a grid of dots&mdash;that is, space the pixels from the source image regularly across a 2048x2048 array that otherwise contains zeros.</li>
   <li> Reconstruct a 2048x2048 image by convolving with a 2D box filter.  Observe that this corresponds to pixels replication, or nearest-neighbor sampling.</li>
   <li> Reconstruct a 2048x2048 image by convolving with a 2D tent filter.  Observe that this corresponds to bilinear interpolation.</li>
-  <li> Plot the Fourier Transforms of the following five images: the impulse grid, the reconstruction filters, and the reconstructed images.  Observe that in the frequency domain, the impulse grid contains many copies of the image's spectrum, and the reconstruction filters are, with differing degrees of success, cutting out one copy of the spectrum.</li>
+  <li> Plot the Fourier Transforms of the following five images: the impulse grid, the reconstruction filters, and the reconstructed images.  Observe that in the frequency domain, the impulse grid contains many copies of the image's spectrum, and the reconstruction filters are suppressing the extra copies of the spectrum. Also observe that there is less aliasing in tent reconstruction compared to the box one.</li>
 </ol>
 
 
