@@ -1,4 +1,4 @@
-<!-- <h1><strong>PA 1: Meshes</strong></h1> -->
+<h1 id="head1">CS5625 PA1: <span class=subtitle>Imaging</span></h1>
 <h3><strong>Due: Tuesday Feb 12 2019 (11:59pm)</strong></h3>
 <script type="text/javascript" async
         src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
@@ -32,3 +32,148 @@
 <p>3). Reconstruct a 2048x2048 image by convolving with a 2D box filter.  Observe that this corresponds to pixels replication, or nearest-neighbor sampling.</p>
 <p>4). Reconstruct a 2048x2048 image by convolving with a 2D tent filter.  Observe that this corresponds to bilinear interpolation.</p>
 <p>5). Plot the Fourier Transforms of the following five images: the impulse grid, the reconstruction filters, and the reconstructed images.  Observe that in the frequency domain, the impulse grid contains many copies of the image's spectrum, and the reconstruction filters are, with differing degrees of success, cutting out one copy of the spectrum.</p>
+
+
+<h2>Prelude: Compiling the Framework</h2>
+
+<p>In this class, we will program a number of graphics applications using a combination of C++ and glsl. C++ is widely used for programming interactive graphics applications where memory management is important; however, it is a little finicky with respect to cross-platform compilation. In principle, the framework we provide in this class should work across many different commonly-used platforms. In practice, if you encounter an error message when compiling the code and you are not sure how to get around it, please let the course staff know.</p>
+
+<p>The course's framework is available in this git repository. We recommend forking the repository to develop your solutions but <em>please ensure that your code is not publicly visible!</em> You should have storage space on <a href="https://github.coecis.cornell.edu/">the COECIS Github</a>, or you can use your personal Github account (Github now provide unlimited free private repositories!) Our repository contains a number of git submodules that should be downloaded as well. You can make sure these are downloaded to your local machine by including the <code>--recursive</code> option when you clone the repository. If you don't include this option, you will get errors later on about missing source code; to recover, you can run the following command: <code>git submodule update --init --recursive</code>.</p>
+
+<p>We use <a href="https://cmake.org/">CMake</a> to generate project build files. If you have not used CMake before, please download one of the binary distributions <a href="https://cmake.org/download/">here</a> (alternatively, it may be available through package managers such as <code>apt</code> or <code>brew</code>). CMake is a command line tool that can generate a wide range of project files, e.g., Makefiles, Xcode project files, and Visual Studio project files. Create a new directory in the root of the repository called "build", set it to your working directory, and run <code>cmake ..</code>. This tells CMake to read the build dependencies listed in <code>CMakeLists.txt</code> in the parent directory. This will generate Makefiles by default; if you'd prefer to use a different development environment, you can specify it using the <code>-G</code> option, e.g., <code>cmake -G Xcode ..</code>.</p>
+
+<p>Once you've generated project files in the <code>build</code> directory, you'll see that there are a number of compilation targets. As a first step, try compiling the <code>Demo</code> target. If you're using Makefiles, you can do this with the command <code>make Demo</code> (or <code>make -jX Demo</code>, replacing <code>X</code> with the number of threads to use to build your project faster.) This should create an executable called <code>Demo</code>, which shows a simple screen with a button that allows you to randomize the background color.</p>
+
+<p>A few notes on the framework for this assignment:
+  <ul>
+    <li>There are four targets in the project: the Demo application, and one for each of the tasks below.  Each displays a bare-bones UI with just the OpenGL viewport, and an appropriate set of mouse controls to move the images around and explore the aliasing artifacts that result.  In the <code>Supersample</code> application, the view deliberately lags behind the mouse, catching up exponentially so that you get slow movement that highlights Moir&eacute; patterns.</li>
+    <li>Each application makes an attempt to measure its performance and displays two numbers in the control panel: the theoretical number of frames per second possible just from performing the drawing operations, and actual framerate of the application. Note that the application places a threshold on its maximum framerate when idle to prevent using up unnecessary computational resources.  These numbers are helpful in understanding how fast your program is running, but they need to be taken with a grain of salt because they are rough and noisy measurements.</li>
+  </ul>
+</p>
+
+<h2 id="task1">Task 1: Sampling</h2>
+
+<p>In this task your job is to implement high-quality antialiased sampling of analytically defined images.  One of the images is a test pattern, known as a "zone plate" because of its resemblance to a diffractive optical element of the same name but actually a very simple function:
+  $$f_\text{zp}(x, y) = f_\text{sw}\bigg(\frac{x^2 + y^2}{s^2}\bigg)$$
+  where \(f_\text{sw}\) is a square wave:
+  $$f_\text{sw}(t) =
+  \begin{cases}
+  0, & t - \lfloor t \rfloor < 0.5 \\
+  1, & t - \lfloor t \rfloor >= 0.5
+  \end{cases}$$
+  The other test image is a fractal image.  The fragment shader that contains all the implementation for this task is <code>resources/Supersample/shaders/patterns.frag</code>.
+</p>
+
+<h3>Point sampling</h3>
+
+<p>This part is already done: in point sampling mode, the framework will render either of the patterns, simply evaluating it at the center of each pixel to produce a point-sampled, and highly aliased, result, similar to these images:</p>
+
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/pa3/zoneplate-point.png"><img src="images/pa3/zoneplate-point.png" width="400"></a></td>
+    <td align="center"><a href="images/pa3/fractal-point.png"><img src="images/pa3/fractal-point.png" width="400"></a></td>
+  </tr>
+</table>
+
+<p>Adjust the scale of the image by scrolling. In the zone plate example, you should be able to see the broad circles near the origin, but also the aliasing patterns that happen near the Nyquist frequency and near the sample frequency.  The aliasing from the high contrast, small scale features in the fractal takes the form of shimmering or glittering as the image moves around.
+</p>
+
+<p>The framework contains the code to draw a full-screen quad with the <code>patterns.frag</code> fragment shader, and it passes in a 2D point (controlled by mouse motion) where the center of the pattern should go, and an integer <code>mode</code>, controlled by the combo menu in the control panel, that indicates what kind of sampling should be done.  <code>MODE_POINT</code> is the default mode that corresponds to this subtask.</p>
+
+<h3>Box filtering with regular supersampling</h3>
+
+<p>Once you have point sampling up and running, modify your shader so that when <code>mode</code> is <code>MODE_REGULAR_BOX</code>, for each pixel it averages \(N^2\) samples of the same function, positioned in a \(N\times N\) grid spread over a unit square (in pixel coordinates) centered at the pixel's sample position.  (You can control \(N\) using the slider in the control panel.)  Once this is working, you should find that the jaggies on the circles near the center become smooth, and the Moir&eacute; patterns are greatly diminshed when using approximately 16 samples per pexel (i.e., \(N = 4\)), like this:</p>
+
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/pa3/zoneplate-regbox.png"><img src="images/pa3/zoneplate-regbox.png" width="400"></a></td>
+    <td align="center"><a href="images/pa3/fractal-regbox.png"><img src="images/pa3/fractal-regbox.png" width="400"></a></td>
+  </tr>
+</table>
+
+<p>(When you're looking at these images, note that your web browser may be layering its own resampling artifacts on top of the ones in the image; open the linked image in its own window to see it more clearly.)</p>
+
+<p>If everything is working right, you should not see the pattern shift as you change the number of samples; the position of the main bull's-eye should remain the same while the edges get smoother.</p>
+
+<p>Questions to ponder:
+  <ul>
+    <li>Watch the artifacts produced by the box filter.  Why do some artifacts move around when you change the number of samples, but some stay put?</li>
+    <li>Which supersampling rates are good at eliminating the artifacts that happen at multiples of the sample frequency?</li>
+    <li>What happens in the frequency domain when we approximate a box filter with a grid of samples?</li>
+    <li>If you unroll the loop for a fixed value of \(N\) does your shader run faster than the general one with for loops?</li>
+  </ul>
+</p>
+
+<h3>Box filtering with I.I.D. stochastic supersampling</h3>
+
+<p>Some of the artifacts in the previous part&mdash;the ones that shift around as you change the sampling rate&mdash;are related to the regularity of the supersampling grid.  After all, the finer grid has exactly the same problems as the original pixel grid; it just pushes them out to higher frequencies.  An alternative, which breaks up grid-related aliasing patterns, is to use random, or stochastic samples.  In this task, you approximate the box filtered image by using \(N^2\) samples placed uniformly and independently within the footprint of the box filter, instead of with a regular array of samples.</p>
+
+<p>Random sampling requires random numbers, and for the purest results they should be uncorrelated from pixel to pixel.  Because generating good pseudo-random numbers in shader code is tricky, we have provided a 400x256 texture (<code>unifRandTex</code>) filled with independent random numbers drawn from a uniform distribution over \([0,1]\). Random numbers are stored in both the red and green channels to represent a 2D offset. Use the first \(N^2\) columns of this texture to select the sample offsets for each pixel, which should be in the range \([-0.5, 0.5]\).  You'll want to use different rows of the texture for each pixel; a good way to do this is to use the <code>random()</code> function provided in the shader, which is a classic hack that computes a random-ish hash of a 2D point.  Those numbers are not random enough to get excellent results on their own, but if you use that function (seeded with something that varies from fragment to fragment) to select a chunk of random numbers from the texture, you can get nicely uncorrelated samples.  (For instance, use the random hash to select the row and the sample index to select the column). <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/textureSize.xhtml">textureSize</a> and <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/texelFetch.xhtml">texelFetch</a> are two very useful glsl operations for this task.</p>
+
+<p>When this part works, you will find many aliasing artifacts disappear, though some, especially around the sample frequency, remain.  It also introduces significant noise to the image:</p>
+
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/pa3/zoneplate-stochbox.png"><img src="images/pa3/zoneplate-stochbox.png" width="400"></a></td>
+  </tr>
+</table>
+
+
+<h3>Box filtering with blue noise samples</h3>
+
+<p>The noise in random-sampled images can be improved by using samples that are more uniformly distributed than you get by just selecting them independently.  Generally speaking, sampling patterns where samples are less likely to be close together or far apart are known as <em>blue noise</em> patterns.  The name comes from the Fourier spectra of these patterns, which have less energy at low frequencies (long wavelengths, analogous to red light) and more at high frequencies (short wavelengths, analogous to blue light).</p>
+
+<p>Because blue noise patterns are not independent samples, you cannot use the first \(N^2\) rows of a texture as we did above. Instead, we've provided 20 separate blue noise textures that were generated for each \(N\) individually. The appropriate texture is loaded into <code>blueRandTex</code> for you. It's important to use complete rows of this texture. Each row contains a set of 2D coordinates (encoded in the red and green channels) that constitute a nice sampling pattern over the unit square.  As before, you'll want to select the rows pseudorandomly to avoid pixel-to-pixel correlations, and shift the \([0,1]\) range of values stored in the image to \([-0.5,0.5]\).</p>
+
+<p>You should find the aliasing is quite similar to the independent-random sampling but the noise is noticeably reduced:</p>
+
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/pa3/zoneplate-bluebox.png"><img src="images/pa3/zoneplate-bluebox.png" width="400"></a></td>
+  </tr>
+</table>
+
+
+<h3>Gaussian filtering with I.I.D. stochastic supersampling</h3>
+
+<p>With box filtering, things get better with increasing numbers of samples, up to a point, but many of the artifacts are persistent no matter how numerous the samples or how nice their arrangement.  We can improve matters by switching to a smoother filter, at the expense of needing to consider samples over a larger area.</p>
+
+<p>The two ways to approximate the convolution with a filter that has non-constant weights are to use uniformly distributed samples in a weighted average, or to use nonuniformly distributed samples.  In this part we will take the second approach, using samples distributed according to a Gaussian probability density \(p(x)\).  If samples are chosen with this density, and then the sample values are simply averaged, the expected result is $$E\{f(X)\} = \int f(x) p(x) dx.$$  If \(p(x)\) is your filter, shifted to the sampling location, then this is the result you are looking for.</p>
+
+<p>We have provided another texture of uniform random numbers, distributed according to a unit-variance Gaussian distribution.  They are encoded in the texture so the the value \(0\) corresponds to \(-3\) (that is, three standard deviations below the mean) and the value \(1\) corresponds to \(+3\) (three standard deviations above the mean).  The tails beyond three standard deviations have been trimmed from the distribution.</p>
+
+<p>Add the ability to compute an image sampled using a Gaussian with standard deviation of 0.5 pixels&mdash;generally a good compromise between blurring and aliasing&mdash;using \(N^2\) Gaussian-distributed samples (because they are chosen independently, you can use the first \(N^2\) columns as with the I.I.D. stochastic box filter). You should find that the result further reduces many of the artifacts from the box filter, especially those at high frequencies (for instance, at twice the sample frequency):</p>
+
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/pa3/zoneplate-gauss.png"><img src="images/pa3/zoneplate-gauss.png" width="400"></a></td>
+    <td align="center"><a href="images/pa3/fractal-gauss.png"><img src="images/pa3/fractal-gauss.png" width="400"></a></td>
+  </tr>
+</table>
+
+<p>How can this behavior be explained by thinking about the Fourier transforms of the box and Gaussian filters?  Why does the Gaussian do such a good job removing artifacts at, for instance, twice the sample frequency?</p>
+
+<p><b>Extra challenge:</b> Compute a set of blue-noise sampling patterns that can be used to get the benefits of the Gaussian filter but reduce the noise to levels similar to those from the blue-noise box filter.</p>
+
+
+<h2 id="task2">Task 2: Reconstruction</h2>
+
+<p>For the second task, you'll implement several reconstruction filters for enlarging an image in <code>resources/Upsample/shaders/upsample.frag</code>.  The test application for this part, <code>Upsample</code>, reads in an image and then provides it as a texture to a fragment shader running on a full-screen quad.  The program initially just displays the full image, but you can use the scroll wheel to zoom in and you can click and drag to move the image around on the screen.</p>
+
+<p>There are three filters to implement: box, tent, and cubic.  Like the previous task, there is a combo box that controls which filter is used. The box corresponds to nearest-neighbor sampling, which happens simply by taking the floor of the input coordinate.  The tent corresponds to bilinear interpolation; for this, you'll want to sample the four nearest texels (using <code>fetchTexel</code> or <code>fetchTexelOffset</code>) and weight them using the 2D tent function.  The cubic is a piecewise cubic function with radius of support 2, as described in the SIGGRAPH paper:
+<blockquote>D. Mitchell &amp; A. Netravali, &ldquo;<a href="http://dx.doi.org/10.1145/378456.378514">Reconstruction filters in computer graphics</a>,&rdquo; <i>SIGGRAPH 1988</i>.</blockquote>
+in Equation 8.  Mitchell and Netravali describe a family of cubics with two parameters, \(B\) and \(C\), and recommend the values \(B = C = 1/3\) for general use.  Set things up so that it uses those values for <code>MODE_CUBIC_MN</code>; \(B = 1, C = 0\) for <code>MODE_CUBIC_BSP</code>; and \(B = 0, C = 0.5\) for <code>MODE_CUBIC_CR</code>.  The edges of the cactus spikes are quite sharp and need a pretty soft reconstruction to completely eliminate grid artifacts.</p>
+
+<p>A correct implementation looks something like this:</p>
+
+<p align="center">
+  <a href="images/pa3/upsample-box.png"><img src="images/pa3/upsample-box.png" width="330"></a>
+  <a href="images/pa3/upsample-tent.png"><img src="images/pa3/upsample-tent.png" width="330"></a>
+  <a href="images/pa3/upsample-bsp.png"><img src="images/pa3/upsample-bsp.png" width="330"></a>
+</p>
+
+<p>If you have your indexing conventions consistent, the image should not shift around when switching between filters.</p>
+
+<h2 id="task3">Task 3: Bloom Filter</h2>
+
+<p>Coming soon...</p>
