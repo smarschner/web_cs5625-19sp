@@ -46,7 +46,7 @@
 
 <p>In this task your job is to implement high-quality antialiased sampling of analytically defined images.  One of the images is a test pattern, known as a "zone plate" because of its resemblance to a diffractive optical element of the same name but actually a very simple function:
   $$f_\text{zp}(x, y) = f_\text{sw}\bigg(\frac{x^2 + y^2}{s^2}\bigg)$$
-  where $f_\text{sw}$ is a square wave:
+  where \(f_\text{sw}\) is a square wave:
   $$f_\text{sw}(t) =
   \begin{cases}
   0, & t - \lfloor t \rfloor < 0.5 \\
@@ -73,7 +73,7 @@
 
 <h3>Box filtering with regular supersampling</h3>
 
-<p>Once you have point sampling up and running, modify your shader so that when <tt>mode</tt> is <tt>MODE_REGULAR_BOX</tt>, for each pixel it averages $N^2$ samples of the same function, positioned in a $N\times N$ grid spread over a unit square (in pixel coordinates) centered at the pixel's sample position.  (You can control $N$ using the slider in the control panel.)  Once this is working, you should find that the jaggies on the circles near the center become smooth, and the Moir&eacute; patterns are greatly diminshed when using approximately 16 samples per pexel (i.e., $N = 4$), like this:</p>
+<p>Once you have point sampling up and running, modify your shader so that when <code>mode</code> is <code>MODE_REGULAR_BOX</code>, for each pixel it averages \(N^2\) samples of the same function, positioned in a \(N\times N\) grid spread over a unit square (in pixel coordinates) centered at the pixel's sample position.  (You can control \(N\) using the slider in the control panel.)  Once this is working, you should find that the jaggies on the circles near the center become smooth, and the Moir&eacute; patterns are greatly diminshed when using approximately 16 samples per pexel (i.e., \(N = 4\)), like this:</p>
 
 <table class="table table-bordered">
   <tr>
@@ -91,15 +91,15 @@
     <li>Watch the artifacts produced by the box filter.  Why do some artifacts move around when you change the number of samples, but some stay put?</li>
     <li>Which supersampling rates are good at eliminating the artifacts that happen at multiples of the sample frequency?</li>
     <li>What happens in the frequency domain when we approximate a box filter with a grid of samples?</li>
-    <li>If you unroll the loop for a fixed value of $N$ does your shader run faster than the general one with for loops?</li>
+    <li>If you unroll the loop for a fixed value of \(N\) does your shader run faster than the general one with for loops?</li>
   </ul>
 </p>
 
 <h3>Box filtering with I.I.D. stochastic supersampling</h3>
 
-<p>Some of the artifacts in the previous part&mdash;the ones that shift around as you change the sampling rate&mdash;are related to the regularity of the supersampling grid.  After all, the finer grid has exactly the same problems as the original pixel grid; it just pushes them out to higher frequencies.  An alternative, which breaks up grid-related aliasing patterns, is to use random, or stochastic samples.  In this task, you approximate the box filtered image by using $N^2$ samples placed uniformly and independently within the footprint of the box filter, instead of with a regular array of samples.</p>
+<p>Some of the artifacts in the previous part&mdash;the ones that shift around as you change the sampling rate&mdash;are related to the regularity of the supersampling grid.  After all, the finer grid has exactly the same problems as the original pixel grid; it just pushes them out to higher frequencies.  An alternative, which breaks up grid-related aliasing patterns, is to use random, or stochastic samples.  In this task, you approximate the box filtered image by using \(N^2\) samples placed uniformly and independently within the footprint of the box filter, instead of with a regular array of samples.</p>
 
-<p>Random sampling requires random numbers, and for the purest results they should be uncorrelated from pixel to pixel.  Because generating good pseudo-random numbers in shader code is tricky, we have provided a 400x256 texture (<tt>unifRandTex</tt>) filled with independent random numbers drawn from a uniform distribution over $[0,1]$. Random numbers are stored in both the red and green channels to represent a 2D offset. Use the first $N^2$ columns of this texture to select the sample offsets for each pixel, which should be in the range $[-0.5, 0.5]$.  You'll want to use different rows of the texture for each pixel; a good way to do this is to use the <tt>random()</tt> function provided in the shader, which is a classic hack that computes a random-ish hash of a 2D point.  Those numbers are not random enough to get excellent results on their own, but if you use that function (seeded with something that varies from fragment to fragment) to select a chunk of random numbers from the texture, you can get nicely uncorrelated samples.  (For instance, use the random hash to select the row and the sample index to select the column). <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/textureSize.xhtml">textureSize</a> and <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/texelFetch.xhtml">texelFetch</a> are two very useful glsl operations for this task.</p>
+<p>Random sampling requires random numbers, and for the purest results they should be uncorrelated from pixel to pixel.  Because generating good pseudo-random numbers in shader code is tricky, we have provided a 400x256 texture (<code>unifRandTex</code>) filled with independent random numbers drawn from a uniform distribution over \([0,1]\). Random numbers are stored in both the red and green channels to represent a 2D offset. Use the first \(N^2\) columns of this texture to select the sample offsets for each pixel, which should be in the range \([-0.5, 0.5]\).  You'll want to use different rows of the texture for each pixel; a good way to do this is to use the <code>random()</code> function provided in the shader, which is a classic hack that computes a random-ish hash of a 2D point.  Those numbers are not random enough to get excellent results on their own, but if you use that function (seeded with something that varies from fragment to fragment) to select a chunk of random numbers from the texture, you can get nicely uncorrelated samples.  (For instance, use the random hash to select the row and the sample index to select the column). <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/textureSize.xhtml">textureSize</a> and <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/texelFetch.xhtml">texelFetch</a> are two very useful glsl operations for this task.</p>
 
 <p>When this part works, you will find many aliasing artifacts disappear, though some, especially around the sample frequency, remain.  It also introduces significant noise to the image:</p>
 
@@ -114,7 +114,7 @@
 
 <p>The noise in random-sampled images can be improved by using samples that are more uniformly distributed than you get by just selecting them independently.  Generally speaking, sampling patterns where samples are less likely to be close together or far apart are known as <em>blue noise</em> patterns.  The name comes from the Fourier spectra of these patterns, which have less energy at low frequencies (long wavelengths, analogous to red light) and more at high frequencies (short wavelengths, analogous to blue light).</p>
 
-<p>Because blue noise patterns are not independent samples, you cannot use the first $N^2$ rows of a texture as we did above. Instead, we've provided 20 separate blue noise textures that were generated for each $N$ individually. The appropriate texture is loaded into <code>blueRandTex</code> for you. It's important to use complete rows of this texture. Each row contains a set of 2D coordinates (encoded in the red and green channels) that constitute a nice sampling pattern over the unit square.  As before, you'll want to select the rows pseudorandomly to avoid pixel-to-pixel correlations, and shift the $[0,1]$ range of values stored in the image to $[-0.5,0.5]$.</p>
+<p>Because blue noise patterns are not independent samples, you cannot use the first \(N^2\) rows of a texture as we did above. Instead, we've provided 20 separate blue noise textures that were generated for each \(N\) individually. The appropriate texture is loaded into <code>blueRandTex</code> for you. It's important to use complete rows of this texture. Each row contains a set of 2D coordinates (encoded in the red and green channels) that constitute a nice sampling pattern over the unit square.  As before, you'll want to select the rows pseudorandomly to avoid pixel-to-pixel correlations, and shift the \([0,1]\) range of values stored in the image to \([-0.5,0.5]\).</p>
 
 <p>You should find the aliasing is quite similar to the independent-random sampling but the noise is noticeably reduced:</p>
 
@@ -129,11 +129,11 @@
 
 <p>With box filtering, things get better with increasing numbers of samples, up to a point, but many of the artifacts are persistent no matter how numerous the samples or how nice their arrangement.  We can improve matters by switching to a smoother filter, at the expense of needing to consider samples over a larger area.</p>
 
-<p>The two ways to approximate the convolution with a filter that has non-constant weights are to use uniformly distributed samples in a weighted average, or to use nonuniformly distributed samples.  In this part we will take the second approach, using samples distributed according to a Gaussian probability density $p(x)$.  If samples are chosen with this density, and then the sample values are simply averaged, the expected result is $$E\{f(X)\} = \int f(x) p(x) dx.$$  If $p(x)$ is your filter, shifted to the sampling location, then this is the result you are looking for.</p>
+<p>The two ways to approximate the convolution with a filter that has non-constant weights are to use uniformly distributed samples in a weighted average, or to use nonuniformly distributed samples.  In this part we will take the second approach, using samples distributed according to a Gaussian probability density \(p(x)\).  If samples are chosen with this density, and then the sample values are simply averaged, the expected result is $$E\{f(X)\} = \int f(x) p(x) dx.$$  If \(p(x)\) is your filter, shifted to the sampling location, then this is the result you are looking for.</p>
 
-<p>We have provided another texture of uniform random numbers, distributed according to a unit-variance Gaussian distribution.  They are encoded in the texture so the the value $0$ corresponds to $-3$ (that is, three standard deviations below the mean) and the value $1$ corresponds to $+3$ (three standard deviations above the mean).  The tails beyond three standard deviations have been trimmed from the distribution.</p>
+<p>We have provided another texture of uniform random numbers, distributed according to a unit-variance Gaussian distribution.  They are encoded in the texture so the the value \(0\) corresponds to \(-3\) (that is, three standard deviations below the mean) and the value \(1\) corresponds to \(+3\) (three standard deviations above the mean).  The tails beyond three standard deviations have been trimmed from the distribution.</p>
 
-<p>Add the ability to compute an image sampled using a Gaussian with standard deviation of 0.5 pixels&mdash;generally a good compromise between blurring and aliasing&mdash;using $N^2$ Gaussian-distributed samples (because they are chosen independently, you can use the first $N^2$ columns as with the I.I.D. stochastic box filter). You should find that the result further reduces many of the artifacts from the box filter, especially those at high frequencies (for instance, at twice the sample frequency):</p>
+<p>Add the ability to compute an image sampled using a Gaussian with standard deviation of 0.5 pixels&mdash;generally a good compromise between blurring and aliasing&mdash;using \(N^2\) Gaussian-distributed samples (because they are chosen independently, you can use the first \(N^2\) columns as with the I.I.D. stochastic box filter). You should find that the result further reduces many of the artifacts from the box filter, especially those at high frequencies (for instance, at twice the sample frequency):</p>
 
 <table class="table table-bordered">
   <tr>
@@ -149,11 +149,11 @@
 
 <h2 id="task2">Task 2: Reconstruction</h2>
 
-<p>For the second task, you'll implement several reconstruction filters for enlarging an image in <code>upsample.frag</code>.  The test application for this part, <code>Upsample</code>, reads in an image and then provides it as a texture to a fragment shader running on a full-screen quad.  The program initially just displays the full image, but you can use the scroll wheel to zoom in and you can click and drag to move the image around on the screen.</p>
+<p>For the second task, you'll implement several reconstruction filters for enlarging an image in <code>resources/Upsample/shaders/upsample.frag</code>.  The test application for this part, <code>Upsample</code>, reads in an image and then provides it as a texture to a fragment shader running on a full-screen quad.  The program initially just displays the full image, but you can use the scroll wheel to zoom in and you can click and drag to move the image around on the screen.</p>
 
 <p>There are three filters to implement: box, tent, and cubic.  Like the previous task, there is a combo box that controls which filter is used. The box corresponds to nearest-neighbor sampling, which happens simply by taking the floor of the input coordinate.  The tent corresponds to bilinear interpolation; for this, you'll want to sample the four nearest texels (using <code>fetchTexel</code> or <code>fetchTexelOffset</code>) and weight them using the 2D tent function.  The cubic is a piecewise cubic function with radius of support 2, as described in the SIGGRAPH paper:
 <blockquote>D. Mitchell &amp; A. Netravali, &ldquo;<a href="http://dx.doi.org/10.1145/378456.378514">Reconstruction filters in computer graphics</a>,&rdquo; <i>SIGGRAPH 1988</i>.</blockquote>
-in Equation 8.  Mitchell and Netravali describe a family of cubics with two parameters, $B$ and $C$, and recommend the values $B = C = 1/3$ for general use.  Set things up so that it uses those values for <tt>MODE_CUBIC_MN</tt>; $B = 1, C = 0$ for <tt>MODE_CUBIC_BSP</tt>; and $B = 0, C = 0.5$ for <tt>MODE_CUBIC_CR</tt>.  The edges of the cactus spikes are quite sharp and need a pretty soft reconstruction to completely eliminate grid artifacts.</p>
+in Equation 8.  Mitchell and Netravali describe a family of cubics with two parameters, \(B\) and \(C\), and recommend the values \(B = C = 1/3\) for general use.  Set things up so that it uses those values for <code>MODE_CUBIC_MN</code>; \(B = 1, C = 0\) for <code>MODE_CUBIC_BSP</code>; and \(B = 0, C = 0.5\) for <code>MODE_CUBIC_CR</code>.  The edges of the cactus spikes are quite sharp and need a pretty soft reconstruction to completely eliminate grid artifacts.</p>
 
 <p>A correct implementation looks something like this:</p>
 
@@ -165,12 +165,6 @@ in Equation 8.  Mitchell and Netravali describe a family of cubics with two para
 
 <p>If you have your indexing conventions consistent, the image should not shift around when switching between filters.</p>
 
-<h2 id="task3">Task 3: Bloom filter</h2>
+<h2 id="task3">Task 3: Bloom Filter</h2>
 
 <p>Coming soon...</p>
-
-<script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
-});
-</script>
