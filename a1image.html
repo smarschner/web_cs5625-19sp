@@ -1,10 +1,7 @@
-<h1 id="head1">CS5625 PA1: <span class=subtitle>Imaging</span></h1>
-<h3><strong>Due: Tuesday Feb 12 2019 (11:59pm)</strong></h3>
-<script type="text/javascript" async
-        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
-</script>
+<p><strong>Due: Tuesday Feb 12 2019 (11:59pm).</strong> Work on your own or in groups of 2, as you prefer. This assignment has a written task and 3 programming tasks.</p>
 
-<h3>Written Part</h3>
+<h2>Written Task</h2>
+
 <p>In this problem, we are going to model image sampling and reconstruction, and observe the frequency-domain effects of filtering when sampling.  This helps us understand the sampling and reconstruction process from the frequency domain perspective, where we can see the effects of filtering more clearly.</p>
 
 <p>Sampling and reconstruction are about translating from a continuous image to a discrete representation and back, and in this assignment we'll make some pictures of what happens in the frequency domain during this process by using a high resolution discrete representation to stand in for the continuous image, and a lower resolution image for the discrete image.  (In this sense, we're really looking at a resampling process, but where the two resolutions are pretty different.)</p>
@@ -14,27 +11,31 @@
 <p>As we increase the sampling rate for any given signal, the DFT becomes a better and better approximation of that signal's continuous FT.  In this assignment images are 256x256, and 2048 is taken to be a good approximation of infinity :). In practice, we use the Fast Fourier Transform (FFT) algorithm to compute DFT.  You are welcome to use your favorite numerical computing language (MATLAB, NumPy, Julia, etc.), where you will invariably find a built-in implementation of the FFT.  If you don't have a favorite yet, we suggest starting with Python and NumPy, and encourage you to come talk to one of us.  Please submit a PDF file that includes your images and code scripts.</p>
 
 <h4>A. Sampling</h4>
-<p>1) Load <a href="https://ipadwallpapers.net/wp-content/uploads/2016/01/nature-ipad-wallpapers-2048x2048-Nature-iPad-Air-Wallpapers-HD-246.jpg">this image</a>, make it into a grayscale image, and use it as the source image.</p>
-<p>2) Make a 256x256 image by point-sampling the source image. Observe there is aliasing.</p>
-<p>3) Use a Gaussian filter to blur the source image and then point sample. Observe there is less aliasing compared to 2).</p>
-<p>4) Construct an image (which we call the impulse grid) that has a 1 at each pixel you sampled in step 2, and zeroes everywhere else.  Multiplying by this image models the point-sampling process. Plot the amplitude of the Fourier Transforms of the following six images: the source image, the blurring filter, the blurred image, the impulse grid, and each of these images multiplied by the impulse grid.  (You might like to look at these FTs as images, but you can just make a plot of the single row that goes through zero frequency to hand in.)  Observe the following:
-<ul>
-<li>The FT of the blurred image is the product of the FTs of the image and the filter.
-<li>The FT of the impulse grid is also an impulse grid. 
-<li>Multiplying by the impulse grid creates copies of the image spectrum, which overlap a lot in the for the non-smoothed case.
-<li>Applying the smoothing filter narrows the frequency spectrum of a signal, so the copies overlap less; as a result, we get less aliasing.
-</ul>
-</p>
+<ol>
+  <li>Load <a href="https://ipadwallpapers.net/wp-content/uploads/2016/01/nature-ipad-wallpapers-2048x2048-Nature-iPad-Air-Wallpapers-HD-246.jpg">this image</a>, make it into a grayscale image, and use it as the source image.</li>
+  <li>Make a 256x256 image by point-sampling the source image. Observe there is aliasing.</li>
+  <li>Use a Gaussian filter to blur the source image and then point sample. Observe there is less aliasing compared to step 2.</li>
+  <li>Construct an image (which we call the impulse grid) that has a 1 at each pixel you sampled in step 2, and zeroes everywhere else.  Multiplying by this image models the point-sampling process. Plot the amplitude of the Fourier Transforms of the following six images: the source image, the blurring filter, the blurred image, the impulse grid, and each of these images multiplied by the impulse grid.  (You might like to look at these FTs as images, but you can just make a plot of the single row that goes through zero frequency to hand in.)  Observe the following:
+    <ul>
+      <li>The FT of the blurred image is the product of the FTs of the image and the filter.</li>
+      <li>The FT of the impulse grid is also an impulse grid.</li>
+      <li>Multiplying by the impulse grid creates copies of the image spectrum, which overlap a lot in the for the non-smoothed case.</li>
+      <li>Applying the smoothing filter narrows the frequency spectrum of a signal, so the copies overlap less; as a result, we get less aliasing.</li>
+    </ul>
+  </li>
+</ol>
 
 <h4>B. Reconstruction</h4>
-<p>1). Load <a href="http://gtwavelet.bme.gatech.edu/images/bird.gif"> this image</a> as the source image.</p>
-<p>2). Make this 256x256 image into a 2048x2048 one by creating a grid of dots&mdash;that is, space the pixels from the source image regularly across a 2048x2048 array that otherwise contains zeroes.</p>
-<p>3). Reconstruct a 2048x2048 image by convolving with a 2D box filter.  Observe that this corresponds to pixels replication, or nearest-neighbor sampling.</p>
-<p>4). Reconstruct a 2048x2048 image by convolving with a 2D tent filter.  Observe that this corresponds to bilinear interpolation.</p>
-<p>5). Plot the Fourier Transforms of the following five images: the impulse grid, the reconstruction filters, and the reconstructed images.  Observe that in the frequency domain, the impulse grid contains many copies of the image's spectrum, and the reconstruction filters are, with differing degrees of success, cutting out one copy of the spectrum.</p>
+<ol>
+  <li> Load <a href="http://gtwavelet.bme.gatech.edu/images/bird.gif"> this image</a> as the source image.</li>
+  <li> Make this 256x256 image into a 2048x2048 one by creating a grid of dots&mdash;that is, space the pixels from the source image regularly across a 2048x2048 array that otherwise contains zeros.</li>
+  <li> Reconstruct a 2048x2048 image by convolving with a 2D box filter.  Observe that this corresponds to pixels replication, or nearest-neighbor sampling.</li>
+  <li> Reconstruct a 2048x2048 image by convolving with a 2D tent filter.  Observe that this corresponds to bilinear interpolation.</li>
+  <li> Plot the Fourier Transforms of the following five images: the impulse grid, the reconstruction filters, and the reconstructed images.  Observe that in the frequency domain, the impulse grid contains many copies of the image's spectrum, and the reconstruction filters are, with differing degrees of success, cutting out one copy of the spectrum.</li>
+</ol>
 
 
-<h2>Prelude: Compiling the Framework</h2>
+<h2>Programming Prelude: Compiling the Framework</h2>
 
 <p>In this class, we will program a number of graphics applications using a combination of C++ and glsl. C++ is widely used for programming interactive graphics applications where memory management is important; however, it is a little finicky with respect to cross-platform compilation. In principle, the framework we provide in this class should work across many different commonly-used platforms. In practice, if you encounter an error message when compiling the code and you are not sure how to get around it, please let the course staff know.</p>
 
@@ -51,7 +52,7 @@
   </ul>
 </p>
 
-<h2 id="task1">Task 1: Sampling</h2>
+<h2 id="task1">Programming Task 1: Sampling</h2>
 
 <p>In this task your job is to implement high-quality antialiased sampling of analytically defined images.  One of the images is a test pattern, known as a "zone plate" because of its resemblance to a diffractive optical element of the same name but actually a very simple function:
   $$f_\text{zp}(x, y) = f_\text{sw}\bigg(\frac{x^2 + y^2}{s^2}\bigg)$$
@@ -156,7 +157,7 @@
 <p><b>Extra challenge:</b> Compute a set of blue-noise sampling patterns that can be used to get the benefits of the Gaussian filter but reduce the noise to levels similar to those from the blue-noise box filter.</p>
 
 
-<h2 id="task2">Task 2: Reconstruction</h2>
+<h2 id="task2">Programming Task 2: Reconstruction</h2>
 
 <p>For the second task, you'll implement several reconstruction filters for enlarging an image in <code>resources/Upsample/shaders/upsample.frag</code>.  The test application for this part, <code>Upsample</code>, reads in an image and then provides it as a texture to a fragment shader running on a full-screen quad.  The program initially just displays the full image, but you can use the scroll wheel to zoom in and you can click and drag to move the image around on the screen.</p>
 
@@ -174,6 +175,6 @@ in Equation 8.  Mitchell and Netravali describe a family of cubics with two para
 
 <p>If you have your indexing conventions consistent, the image should not shift around when switching between filters.</p>
 
-<h2 id="task3">Task 3: Bloom Filter</h2>
+<h2 id="task3">Programming Task 3: Bloom Filter</h2>
 
 <p>Coming soon...</p>
