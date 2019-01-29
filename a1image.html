@@ -5,15 +5,15 @@
 </script>
 
 <h3>Written Part</h3>
-In this problem, we are going to model image sampling and reconstruction. You are welcome to use your favorite language (MATLAB, Python, Julia, etc.) and their built-in functions. Please submit a PDF file that includes your images and code scripts.
+In this problem, we are going to model image sampling and reconstruction, and convince ourselves that we need to filter when sampling. Fourier Transform(FT) expresses any function by adding together sine waves of all frequencies with some desired weights. It helps us understand the sampling and reconstruction process from the frequency domain perspective, where we can see the effects of filtering clearer. FT is a continuous transformation of a continuous signal, while Discrete Fourier Transform(DFT) is a discrete transformation of a discrete signal. Since we deal with sampled pixel values when processing images, we use DFT instead of FT for analysis. In practice, we use Fast Fourier Transform(FFT) to compute DFT. You are welcome to use your favorite language (MATLAB, Python, Julia, etc.) and their built-in functions. Please submit a PDF file that includes your images and code scripts.
 <h4>A. Sampling</h4>
-<p>1). Load image1.jpg in the repo as the source image.</p>
+<p>1). Load <a href="https://ipadwallpapers.net/wp-content/uploads/2016/01/nature-ipad-wallpapers-2048x2048-Nature-iPad-Air-Wallpapers-HD-246.jpg"> this image</a>, make it into a grayscale image, and use it as the source image.</p>
 <p>2). Make a 256x256 image by point-sampling the source image. Observe there is aliasing.</p>
 <p>3). Use a Gaussian filter to blur the source image and then point sample. Observe there is less aliasing compared to 2).</p>
-4). Construct the impulse grid that corresponds to the point-sampling. Plot the amplitude of the Fourier Transform of the following four images: the source image, the blurred image, and each of these images multiplied by the impulse grid. Observe the copying of spectra and the overlaps for the non-smoothed case.
+4). Construct the impulse grid that corresponds to the point-sampling. Plot the amplitude of the Fourier Transform of the following four images: the source image, the blurred image, and each of these images multiplied by the impulse grid. Observe the copying of spectra and the overlaps for the non-smoothed case. Applying smoothing filters narrows the frequency spectrum of a signal, so the copies overlap less when apply a blur filter. As a result, we get less aliasing.
 
 <h4>B. Reconstruction</h4>
-<p>1). Load image2.jpg in the repo as the source image.</p>
+<p>1). Load <a href="http://gtwavelet.bme.gatech.edu/images/bird.gif"> this image</a> as the source image.</p>
 <p>2). Make this 256x256 image into a 512x512 one by creating a grid of dots (pixels from the source image).</p>
 <p>3). Reconstruct a 512x512 image by convolving with a box filter. Observe this corresponds to replicating pixels.</p>
 <p>4). Reconstruct a 512x512 image by convolving with a tent filter. Observe this corresponds to bilinear interpolation.</p>
