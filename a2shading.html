@@ -6,16 +6,18 @@
 
 <h2>Written Task</h2>
 
-<p>In this written assignment, we will deal with tangent vectors and shading frames. We’ve seen in class that we can compute tangent frames from the texture coordinates.  Recap the basic idea is that we can define a linear mapping from 2D texture coordinates to 3D coordinates:  f(u, v) = (x, y, z). This mapping gives us tangent vectors in the u and v directions per triangle. Then we can average triangle tangent vectors to get vertex tangents as what we do for normal vectors.</p>
+<p>In this written assignment, we will deal with tangent vectors and shading frames. We’ve seen in class that we can compute tangent frames from the texture coordinates.  To recap: the basic idea is that we can define a linear mapping from 2D texture coordinates to 3D coordinates:  \(f(u, v) = (x, y, z)\). The derivative of this mapping gives us tangent vectors in the \(u\) and \(v\) directions per triangle. Then we can average the triangles' tangent vectors to get vertex tangents, in the same way as we do for normal vectors.</p>
 
-<p>Assume we have a mesh drawn in the left image. It contains 6 triangles: \(\Delta X_1X_2X_7, \Delta X_2X_3X_7, \Delta X_3X_4X_7, \Delta X_4X_5X_7, \Delta X_5X_6X_7, and \Delta X_6X_1X_7\). The vertices’ 3D positions are:
-    \(X_1 = (0, 1, 0), 
-    X_2 = (-\frac{\sqrt3}{2}, \frac{1}{2}, 0),
-    X_3 = (-\frac{\sqrt3}{2}, -\frac{1}{2}, 0),
-    X_4 = (0, -1, 0)
-    X_5 = (\frac{\sqrt3}{2}, -\frac{1}{2}, 0),
-    X_6 = (\frac{\sqrt3}{2}, \frac{1}{2}, 0),
-    X_7 = (0, 0, 1)\).
+<p>Assume we have a mesh drawn in the left image. It contains 6 triangles: \(\Delta X_1X_2X_7, \Delta X_2X_3X_7\), \(\Delta X_3X_4X_7\), \(\Delta X_4X_5X_7\), \(\Delta X_5X_6X_7\), and \(\Delta X_6X_1X_7\). The vertices’ 3D positions are:
+    \[\begin{aligned}
+    X_1 &= (0, 1, 0), \\
+    X_2 &= (-\frac{\sqrt3}{2}, \frac{1}{2}, 0),\\
+    X_3 &= (-\frac{\sqrt3}{2}, -\frac{1}{2}, 0),\\
+    X_4 &= (0, -1, 0),\\
+    X_5 &= (\frac{\sqrt3}{2}, -\frac{1}{2}, 0),\\
+    X_6 &= (\frac{\sqrt3}{2}, \frac{1}{2}, 0),\\
+    X_7 &= (0, 0, 1).\\
+    \end{aligned}\]
 </p>
 
 <div class="thumbnails" style="text-align: center">
@@ -23,15 +25,15 @@
     <img src="images/a2/right.png" alt="Texture coordinates">
 </div>
 
-<p>The image on the right gives the corresponding texture coordinates. Also, we are given that the normal direction for each triangle is defined as a vector from the origin to the center of that triangle. </p>
+<p>The image on the right gives the corresponding texture coordinates. Note that for all these triangles, the normal to the triangle is a vector from the origin to the center of that triangle. </p>
 
-<p> a)    Compute the normal for each triangle.</p>
-<p> b)    Compute the tangent vectors for each triangle. </p>
-<p>c)    For each triangle, check whether the tangents are orthogonal to the normals and whether they are orthogonal to each other. Is orthogonality guaranteed to be true and why? Under what circumstances the normals will be orthogonal to the tangents?</p>
+<p>a)    Compute the normal for each triangle.</p>
+<p>b)    Compute the tangent vectors for each triangle. </p>
+<p>c)    For each triangle, check whether the tangents are orthogonal to the normals and whether they are orthogonal to each other. Which orthogonalities are guaranteed to be true and why? Under what circumstances the normals will be orthogonal to the tangents?</p>
 <p>d)    Average normal vectors and tangent vectors to get vertex normals and tangents.</p>
-<p>e)    Compute the orthonormal frames at x1 x2 and x7. </p>
+<p>e)    Compute the orthonormal frames at \(X_1\), \(X_2\), and \(X_7\). </p>
 <p>f)    Calculate interpolated normals and tangents at the center of \(\Delta X_1X_2X_7\).</p>
 <p>g)    Is the frame calculated in f) guaranteed to be orthonormal? Why? Compute the orthonormal frame if it is needed.</p>
-<p>h)    If we change u6 to (0,5 0,7), can we still calculate tangent frames for each triangle? If not, what issue are we running into?  In practice, how might you make your code robust to this problem?</p>
+<p>h)    If we change \(U_6\) to \((0.5, 0.7)\), can we still calculate tangent frames for each triangle? If not, what issue are we running into?  In practice, how might you make your code robust to this problem?</p>
 
 You can pick your favorite language to do the calculations. Please submit a file with your answer to c), e), f), g) and h).</p>
