@@ -190,6 +190,9 @@
         { tag: 'phys', name: 'Physics', text: 'Coming soon&hellip;', src: '' },
         { tag: 'shadow', name: 'Shadows', text: 'Coming soon&hellip;', src: '' },
       ]
+      MathJax.Hub.Config({
+        tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+      });
       projects.map(function (proj, i) {
         $('#projects_content').append($(' \
           <div class="homework accordion-group" id="' + proj.tag + '"> \

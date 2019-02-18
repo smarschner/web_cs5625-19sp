@@ -4,7 +4,7 @@
 
 <p><strong>Due: Tuesday Mar 5 2019 (11:59pm).</strong> Work on your own or in groups of 2, as you prefer. This assignment has a written task and 2 programming tasks.</p>
 
-<h2>Written Task</h2>
+<h2>Written Part</h2>
 
 <p>In this written assignment, we will deal with tangent vectors and shading frames. We’ve seen in class that we can compute tangent frames from the texture coordinates.  To recap: the basic idea is that we can define a linear mapping from 2D texture coordinates to 3D coordinates:  \(f(u, v) = (x, y, z)\). The derivative of this mapping gives us tangent vectors in the \(u\) and \(v\) directions per triangle. Then we can average the triangles' tangent vectors to get vertex tangents, in the same way as we do for normal vectors.</p>
 
@@ -37,3 +37,225 @@
 <p>h)    If we change \(U_6\) to \((0.5, 0.7)\), can we still calculate tangent frames for each triangle? If not, what issue are we running into?  In practice, how might you make your code robust to this problem?</p>
 
 You can pick your favorite language to do the calculations. Please submit a file with your answer to c), e), f), g) and h).</p>
+
+
+      <h2>Programming Part</h2>
+      
+      <p>In this programming assignment, you will implement two different approaches to computing shaded images: forward rendering and deferred shading.  Within these two frameworks, you'll implement a set of shading models: Blinn-Phong shading (for comparison), Microfacet shading in both isotropic and anisotropic variants, and normal mapping to add lightweight surface relief.  To these shading models you'll add a post-processing pass that simulates bloom from bright image features, including directly viewed light sources and bright reflections.</p>
+
+      <h3>Forward Shading, Deferred Shading, and post-processing</h3>
+
+      <p>In this assignment there are two overal modes of operation: forward shading, which is the familiar process in which fragments are shaded immediately as each triangle is rasterized, and deferred shading, in which the first rendering pass simply writes the shader inputs to a set of G-buffers, and the actual shading is computed in a second pass.  For this assignment the point is just to implement the two, so we compute the same results in both modes.</p>
+
+      <p>In both forward and deferred modes, the shaded fragments are written to a buffer that is then processed in a final filtering pass, in which we apply a bloom filter.  This is simply a convolution filter with a particular analytically defined filter, but it is accelerated using an approximation in terms of several Gaussian filters, in order to make it faster.</p>
+
+      <p>We recommend implementing everything in the forward path first, before implementing the deferred shading path and porting the shaders to that context.  You may find it useful to share code between the fragment shaders for the two paths by using shader code concatenation.  Once you have either or both paths working you can implement the bloom filter.</p>
+
+
+      <h3>Isotropic Microfacet Shading Model</h3>
+
+      <p>The framework comes with a basic forward rendering path implemented that supports three materials: <tt>IsotropicMicrofacet</tt>, <tt>AnisotropicMicrofacet</tt>, and <tt>NormalMapBlinnPhong</tt>.  However, the shader implementations of all these materials only implement constant-color shading.</p>
+
+      <p>To enable isotropic microfacet shading, edit <tt>resources/Shading/shaders/forward/isotropic_microfacet.frag</tt>
+        to implement the microfacet reflectance model described in the paper <a href="http://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.html">"Microfacet Models for Refraction through Rough Surfaces"</a> by Walter et al., using the GGX model for the normal distribution function (NDF) that was introduced (to graphics) by that paper.  (Despite the name, the paper talks about models for both refraction and reflection.  However, we will only use the reflection part.)
+      </p>
+
+      <p>The parameters of the model are strored in the <tt>IsotropicMicrofacet</tt> class, and they are:
+        <ul>
+          <li>The diffuse color $k_d$ in RGBA format;</li>
+          <li>The index of refraction $\eta$, a scalar;</li>
+          <li>The roughness parameter $\alpha$, a scalar.</li>
+        </ul>
+        The class also maps these parameters to uniforms for the fragment shader, so you should not need to modify it at all.
+      </p>
+
+      <p>The solution implemented the model as follows. The RGB color of the fragment due to a light source is given by:
+        $$\mathrm{color} = \bigg( k_d  + \frac{ F(\mathrm{i}, \mathrm{m}) D(\mathrm{m}) G(\mathrm{i}, \mathrm{o}, \mathrm{m})}{4 | \mathrm{i} \cdot \mathrm{n} | |\mathrm{o} \cdot \mathrm{n} | } \bigg) \max( 0, \mathrm{n} \cdot \mathrm{i} ) \times I$$
+        where
+        <ul>
+          <li>$\mathrm{n}$ is the normal vector at the point being shaded,</li>
+          <li>$\mathrm{i}$ is the unit vector from the shaded point to the light source,</li>
+          <li>$\mathrm{o}$ is the unit vector from the shaded point to the camera,</li>
+          <li>$\mathrm{m}$ is half vector between $\mathrm{i}$ and $\mathrm{o}$, in other words,
+            $$ \mathrm{m} = \frac{\mathrm{i} + \mathrm{o}}{\| \mathrm{i} + \mathrm{o} \|},$$
+          </li>
+          <li>$F(\mathrm{i}, \mathrm{m})$ is the Fresnel factor:
+            $$ F(\mathrm{i}, \mathrm{m}) = \frac{1}{2} \frac{(g-c)^2}{(g+c)^2} \bigg( 1 + \frac{(c(g+c)-1)^2}{(c(g-c)+1)^2} \bigg) $$
+            where $g = \sqrt{\eta^2 - 1 + c^2}$ and $c = |\mathrm{i} \cdot \mathrm{m}|$,
+          </li>
+          <li>$D(\mathrm{m})$ is the GGX distribution function:
+            $$D(\mathrm{m}) = \frac{\alpha^2 \chi^+ (\mathrm{m} \cdot \mathrm{n})}{\pi \cos^4 \theta_m (\alpha^2 + \tan^2 \theta_m)^2}$$
+            where $\chi^+$ is the positive characteristic function ($\chi^+(a) = 1$ if $a> 0$ and $\chi^+(a) = 0$ if $a \leq 0$), and $\theta_m$ is the angle between $\mathrm{m}$ and $\mathrm{n}$,
+          </li>
+          <li>$G(\mathrm{i}, \mathrm{o}, \mathrm{m})$ is the shadowing-masking function of the GGX distribution:
+            $$G(\mathrm{i}, \mathrm{o}, \mathrm{m}) = G_1(\mathrm{i},\mathrm{m}) G_1(\mathrm{o}, \mathrm{m})$$
+            and
+            $$G_1(\mathrm{v},\mathrm{m}) = \chi^+((\mathrm{v} \cdot \mathrm{m}) (\mathrm{v} \cdot \mathrm{n})) \frac{2}{1 + \sqrt{1 + \alpha^2 \tan^2 \theta_v}}$$
+            where $\theta_v$ is the angle between $\mathrm{v}$ and $\mathrm{n}$.
+          </li>
+          <li>$I$ is the "power" of the light source.  See more details on how the power is computed in <a href="#implementation-details">the implementation details section.</a></li>
+        </ul>
+      </p>
+
+
+      <h3>Anisotropic Microfacet Shading Model</h2>
+
+      <p>For an anisotropic surface, the NDF is no longer a function only of the angle between the normal and the half vector, but depends on the components of the half vector in the $\mathrm{t}$ and $\mathrm{b}$ directions independently, where $\mathrm{t}$ and $\mathrm{b}$ are the tangent and bitangent vectors in the orthogonal frames supplied by the <tt>TriangleMesh</tt> class.  The model we'll use is almost the same as the isotropic one.  The only differences are in $D$ and $G_1$, which must now be calculated using the tangent space and two roughness parameters $\alpha_X$ and $\alpha_Y$, specificed separately to indicate the width of the NDF in the direction of $\mathrm{t}$ and $\mathrm{b}$ respectively.</p>  
+
+      <p>Consider the coordinate frame with the tangent $\mathrm{t}$ as its x-axis, the bitangent $\mathrm{b}$ as its y-axis, and the surface normal $\mathrm{n}$ as its z-axis.  Let $m_t$, $m_b$, and $m_n$ be the scalars such that 
+      $$\mathrm{m} = m_t \mathrm{t} + m_b \mathrm{b} + m_n \mathrm{n}.$$ (Note that $m_n = \mathrm{m} \cdot \mathrm{n} = \cos \theta_m$, $m_t = \mathrm{m} \cdot \mathrm{t}$, and $m_b = \mathrm{m} \cdot \mathrm{b}$.) Then, the anisotropic version of the GGX distribution is given by:
+      $$D(\mathrm{m}) = \frac{\chi^+(\mathrm{m} \cdot \mathrm{n})}{ \pi \alpha_X \alpha_Y \bigg(m_n^2 + \frac{m_t^2}{\alpha_X^2} + \frac{m_b^2}{\alpha_Y^2} \bigg)^2}.$$
+      (See if you can show that the above expression is the same as the definition of $D$ in Task 2 when $\alpha_X = \alpha_Y$.)
+      The shadow masking function $G$ is the same as that of the isotropic function, except that the roughness parameter $\alpha$ must be calculated from $\alpha_X$ and $\alpha_Y$ as follows:
+      $$\alpha = \sqrt{\frac{\alpha_X^2 m_t^2 + \alpha_Y^2 m_b^2}{m_t^2 + m_b^2} }.$$
+      </p>      
+
+      <p>Edit
+        <ul>
+          <li><tt>Shading/ShadingApp.cpp</tt></li>
+          <li><tt>resources/Shading/shaders/forward/isotropic_microfacet.frag</tt></li>
+        </ul>
+        to put the above formulas into action.  After completing this exercise, the rendering of the "material test" scene (3rd scene in the combo box) should look like the image below.
+      </p>
+
+      <p align="center"><img src="images/a2/PA2-aniso-01.png" width="600" /></p>
+
+      <p>We also provide two test scenes: the "anisotropic test scene" and the "vinyl scene".  The renderings produced by the solution systems of the three test scenes are given below:</p>
+
+      <table class="table table-bordered">
+        <tr>
+          <td align="center"><a href="images/a2/PA2-aniso-02.png"><img src="images/a2/PA2-aniso-02.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/PA2-aniso-03.png"><img src="images/a2/PA2-aniso-03.png" width="300"/></a></td>
+        </tr>
+        <tr>
+          <td align="center"><a href="images/a2/PA2-aniso-test-01.png"><img src="images/a2/PA2-aniso-test-01.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/PA2-aniso-test-02.png"><img src="images/a2/PA2-aniso-test-02.png" width="300"/></a></td>
+        </tr>
+        <tr>
+          <td align="center"><a href="images/a2/PA2-vinyl-01.png"><img src="images/a2/PA2-vinyl-01.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/PA2-vinyl-02.png"><img src="images/a2/PA2-vinyl-02.png" width="300"/></a></td>
+        </tr>
+      </table>
+
+      <h3>Tangent-Space Normal Mapping</h3>
+
+      <p>Edit:
+        <ul>
+          <li><tt>Shading/ShadingApp.cpp</tt></li>
+          <li><tt>resources/Shading/shaders/forward/normalmap_blinnphong.frag</tt></li>
+        </ul>
+        so that the forward renderer implements a Blinn-Phong shading model together with a tangent space normal map.  The only difference between this model and the standard version is how the normal at the shaded point is computed.  In the standard version, we just normalize the vector given to us through the varying variable <tt>geom_normal.</tt>  In this version, however, we first need to compute an orthonormal tangent space at the shaded point and then use it, together with the texture value of the normal map, to compute the effective normal.
+      </p>
+
+      <p>Let us first discuss the computation of the tangent space.  The vertex shader will pass three varying variables: <tt>geom_normal</tt>, <tt>geom_tangent</tt>, and <tt>geom_bitangent</tt> to the fragment shader.  The vectors contained in these variabled are interpolated from those same vectors at the vertices.  Hence, they are not necessarily orthonormal or even normalized.  To recover, an orthonomal frame ($\mathbf{t}$, $\mathbf{b}$, $\mathbf{n}$), we suggest that you:
+      <ol>
+        <li>Normalize the <tt>geom_normal</tt> variable to get the normal vector $\mathbf{n}$.</li>
+        <li>Project <tt>geom_tangent</tt> to the plane perpendicular to $\mathbf{n}$ and then normalize it to get $\mathbf{t}$.</li>
+        <li>Compute the cross product $\tilde{\mathbf{b}} = \mathbf{n} \times \mathbf{t}$.</li>
+        <li>If the dot product between <tt>geom_bitangent</tt> and $\tilde{\mathbf{b}}$ is greater than 0, set $\mathbf{b} = \tilde{\mathbf{b}}$.  Otherwise, set $\mathbf{b} = -\tilde{\mathbf{b}}$.</li>
+      </ol>
+      In other words, we want a frame where the normal is parallel to the interpolated value.  The tangent vector is as close as possible to the interpolated value but perpendicular to the normal.  The bitangent is "redefined" to be parallel to the cross product between $\mathbf{n}$ and $\mathbf{t}$, but pointing in the direction that preserves the handedness given by the original mesh data.</p>
+
+      <p>Next is the computation of the effective normal.  The normal map encodes the normal texture as a color as follows:
+        $$\begin{bmatrix} r \\ g \\ b\end{bmatrix} = \begin{bmatrix} (\bar{\mathbf{n}}_x + 1) /2 \\ (\bar{\mathbf{n}}_y + 1) /2 \\ (\bar{\mathbf{n}}_z + 1) /2 \end{bmatrix}$$
+        where $\bar{\mathbf{n}} = (\bar{\mathbf{n}}_x, \bar{\mathbf{n}}_y, \bar{\mathbf{n}}_z)^T$, in tangent space, being encoded.  You should recover the tangent space normal from the color of the texture at the shaded point.  Then, the effective normal $\mathbf{n}_{\mathrm{eff}}$ is given by:
+        $$ \mathbf{n}_{\mathrm{eff}} = \bar{\mathbf{n}}_x \mathbf{t} + \bar{\mathbf{n}}_y \mathbf{b} + \bar{\mathbf{n}}_z \mathbf{n}.$$  Proceed by using the effective normal to shade the fragment.
+      </p>
+
+      <p>After implementing the shader, the floor and the cube in the "normal mapping test" scene should become much more interesting:</p>
+
+      <table class="table table-bordered">
+        <tr>
+          <td align="center"><a href="images/a2/PA2-normal-mapping-01.png"><img src="images/a2/PA2-normal-mapping-01.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/PA2-normal-mapping-02.png"><img src="images/a2/PA2-normal-mapping-02.png" width="300"/></a></td>
+        </tr>
+        <tr>
+          <td align="center"><a href="images/a2/PA2-normal-mapping-03.png"><img src="images/a2/PA2-normal-mapping-03.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/PA2-normal-mapping-04.png"><img src="images/a2/PA2-normal-mapping-04.png" width="300"/></a></td>
+        </tr>
+      </table>
+
+      <p>On the other hand, here is what it would look like if the ground plane and the cube are shaded with standard Blinn-Phong model.</p> 
+
+      <p align="center">
+        <a href="images/a2/PA2-normal-mapping-05.png"><img src="images/a2/PA2-normal-mapping-05.png" width="600"/></a>
+      </p>
+
+      <p>You can see that normal mapping provides more surface details.</p>
+
+      <p>The following are renderings produced by the solution system of the "tangent test scene."</p>
+
+      <table class="table table-bordered">
+        <tr>
+          <td align="center"><a href="images/a2/PA2-tangent-test-01.png"><img src="images/a2/PA2-tangent-test-01.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/PA2-tangent-test-02.png"><img src="images/a2/PA2-tangent-test-02.png" width="300"/></a></td>
+        </tr>        
+      </table>
+
+
+      <h3>Deferred Shading</h3>
+
+      <p>Now that everything works in forward shading mode, you're ready to implement the deferred shading pipeline.  In the shader code this mainly involves moving the same fragment shdaer code around to split it into a first-pass shader for each material and a second-pass ubershader.  The first-pass shaders have the same inputs as the corresponding forward-pass shaders and write the intermediate data into some G-buffers.  The second-pass ubershader calls the same code that is used in forward rendering to compute the shaded fragment colors.</p>
+
+      <p>The larger difference is on the C++ side.  You will need to make several additions:
+        <ul>
+            <li>At initialization create an FBO that owns enough color textures to hold the required intermediate data.  Our solution uses four RGBA buffers.</li>
+            <li>Create a separate branch in <tt>ShadingApp::drawContents</tt> that runs when <tt>mode == Mode::Deferred</tt> that first binds the G-buffer FBO, renders the scene with the first-pass shader programs, then binds the buffer that will be input for the sRGB shader and renders a full-screen quad with the ubershader program, providing the G-buffers to the shader programs as textures.</li>
+            <li>Retain the third pass that converts to sRGB and writes to the default framebuffer.
+        </ul>
+      You may find it helpful to write dummy second-pass shaders that copy the G-buffers straight to the output, so that you can see what data is being stored.  When everything works, you should find that switching between forward and deferred modes has no visible effect on the image.
+
+
+      <h3>Framework</h3>
+
+      Needs updating for 2019.
+
+      <p>The <tt>student</tt> folder contains an Eclipse project that contains all the relevant source code.  The class <tt><a href="../student/src/pa1/PA1.java">pa1.PA1</a></tt> implements a program that loads and renders three 3D scenes.  Running the program, you should see the following window:</p>
+
+      <p align="center"><img src="images/a2/PA2-initial.png" width="600" /></p>
+
+      <p>You can use the combo boxes at the bottom of the window to change the scenes and the renderers.  The program can be controlled using the following mouse and keyboard combinations:
+        <ul>
+          <li>LMB or Shift+LMB: Rotating the camera.</li>
+          <li>Alt+LMB: Translating the camera view point.</li>
+          <li>Ctrl+LMB or Mouse Wheel: Changing the camera zoom.</li>
+        </ul>
+      </p>
+
+      <p>The framework for programming assignments was written in Java 8.  It does not run on older (or netbook) hardware. Known requirements are:
+        <ol>
+          <li>The GPU must support OpenGL 2.1 and GLSL 1.3.</li>
+          <li>The GPU must support the <tt>GL_ARB_texture_rectangle</tt> extension.</li>
+          <li>The GPU must support at least 4 color attachments on a frame buffer object.</li>
+          <li>The GPU must support at least 5 texture targets.</li>
+          <li>The GPU must suport dynamic branches and loops in fragment shaders. </li>
+        </ol>
+        All Gates Hall lab computers have up-to-date GPUs and should be able to run the framework without problems.
+      </p>      
+
+      <h2 id="what-to-submit">What to Submit</h2>
+
+      <p>You should submit a ZIP file containing all the source codes and data in the <tt>PA1/student</tt> directory.  All the code you have written should be well commented and easy to read, and header comments for all modified files should appropriately indicate authorship.  Be sure to cite sources for any code or formulas that came from anywhere other than your head or this assignment document.  Also, put in the directory a readme file explaining any implementation choices you made or difficulties you encountered.</p>
+
+      <h2 id="implementation-details">Implementation Details</h2>
+
+      <h4>Use of Textures</h4>
+
+      <p>Some material properties are stored as a scalar/vector value and a texture.  For example, in the <a href="../student/src/cs5625/gfx/material/BlinnPhongMaterial.java"><tt>BlinnPhongMaterial</tt></a> class, there is both the <tt>specularColor</tt> field and teh <tt>specularTexture</tt> field.  In such a case, the scalar/vector value must be defined, but the texture can be left unspecified (i.e., null).</p>
+
+      <p>In the corresponding fragment shader, there will be 3 uniforms related to the material parameter.  One uniform corresponds to the scalar/vector value (for example, <tt>mat_specular</tt>).  One uniform serves as a flag telling whether there exists the corresponding texture (for example, <tt>mat_hasSpecularTexture</tt>).  One uniform corresponds to the texture (for example, <tt>mat_specularTexture</tt>).  If the texture is undefined, you should use the scalar/vector value to calculate shading.  If the texture is undefined, you should fetch the texture value, multiply it with the scalar/vector value, and use the product to compute shading.  For example, we might compute the specular value that will used later for shading in the fragment shader as follows:</p>
+
+      <pre>
+vec3 specular = mat_specular;
+if (mat_hasSpecularTexture) {
+  specular *= texture2D(mat_specularTexture, geom_texCoord).xyz;
+}</pre>
+
+      <h4>Point Light Sources</h4>
+
+      <p>Light sources in this PA are all point light sources and implemented in the <a href="../student/src/cs5625/gfx/light/PointLight.java"><tt>PointLight</tt></a> class.  A point light is specified by three parameters: its position, its color (i.e., power), and its 3 attenuation coefficients.  The power reaching a shaded point is computed in a non-physical manner as follows:
+        $$ \mathrm{power} = \frac{color}{A + Bd + Cd^2} $$
+      </p>
+      where $d$ is the distance between the light source and the shaded point, $A$ is the constant attenuation coefficient, $B$ is the linear attenuation coefficient, and $C$ is the quadratic attenuation coefficient.  You can see this calculation implemented in the <a href="../student/src/shaders/forward/lambertian.frag">fragment shader of the lambertian material</a>.
+
+
