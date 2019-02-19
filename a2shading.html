@@ -62,9 +62,9 @@ You can pick your favorite language to do the calculations. Please submit a file
 
       <p>The parameters of the model are strored in the <tt>IsotropicMicrofacet</tt> class, and they are:
         <ul>
-          <li>The diffuse color $k_d$ in RGBA format;</li>
-          <li>The index of refraction $\eta$, a scalar;</li>
-          <li>The roughness parameter $\alpha$, a scalar.</li>
+          <li>The diffuse color \(k_d\) in RGBA format;</li>
+          <li>The index of refraction \(\eta\), a scalar;</li>
+          <li>The roughness parameter \(\alpha\), a scalar.</li>
         </ul>
         The class also maps these parameters to uniforms for the fragment shader, so you should not need to modify it at all.
       </p>
@@ -73,40 +73,40 @@ You can pick your favorite language to do the calculations. Please submit a file
         $$\mathrm{color} = \bigg( k_d  + \frac{ F(\mathrm{i}, \mathrm{m}) D(\mathrm{m}) G(\mathrm{i}, \mathrm{o}, \mathrm{m})}{4 | \mathrm{i} \cdot \mathrm{n} | |\mathrm{o} \cdot \mathrm{n} | } \bigg) \max( 0, \mathrm{n} \cdot \mathrm{i} ) \times I$$
         where
         <ul>
-          <li>$\mathrm{n}$ is the normal vector at the point being shaded,</li>
-          <li>$\mathrm{i}$ is the unit vector from the shaded point to the light source,</li>
-          <li>$\mathrm{o}$ is the unit vector from the shaded point to the camera,</li>
-          <li>$\mathrm{m}$ is half vector between $\mathrm{i}$ and $\mathrm{o}$, in other words,
+          <li>\(\mathrm{n}\) is the normal vector at the point being shaded,</li>
+          <li>\(\mathrm{i}\) is the unit vector from the shaded point to the light source,</li>
+          <li>\(\mathrm{o}\) is the unit vector from the shaded point to the camera,</li>
+          <li>\(\mathrm{m}\) is half vector between \(\mathrm{i}\) and \(\mathrm{o}\), in other words,
             $$ \mathrm{m} = \frac{\mathrm{i} + \mathrm{o}}{\| \mathrm{i} + \mathrm{o} \|},$$
           </li>
-          <li>$F(\mathrm{i}, \mathrm{m})$ is the Fresnel factor:
+          <li>\(F(\mathrm{i}, \mathrm{m})\) is the Fresnel factor:
             $$ F(\mathrm{i}, \mathrm{m}) = \frac{1}{2} \frac{(g-c)^2}{(g+c)^2} \bigg( 1 + \frac{(c(g+c)-1)^2}{(c(g-c)+1)^2} \bigg) $$
-            where $g = \sqrt{\eta^2 - 1 + c^2}$ and $c = |\mathrm{i} \cdot \mathrm{m}|$,
+            where \(g = \sqrt{\eta^2 - 1 + c^2}\) and \(c = |\mathrm{i} \cdot \mathrm{m}|\),
           </li>
-          <li>$D(\mathrm{m})$ is the GGX distribution function:
+          <li>\(D(\mathrm{m})\) is the GGX distribution function:
             $$D(\mathrm{m}) = \frac{\alpha^2 \chi^+ (\mathrm{m} \cdot \mathrm{n})}{\pi \cos^4 \theta_m (\alpha^2 + \tan^2 \theta_m)^2}$$
-            where $\chi^+$ is the positive characteristic function ($\chi^+(a) = 1$ if $a> 0$ and $\chi^+(a) = 0$ if $a \leq 0$), and $\theta_m$ is the angle between $\mathrm{m}$ and $\mathrm{n}$,
+            where \(\chi^+\) is the positive characteristic function (\(\chi^+(a) = 1\) if \(a> 0\) and \(\chi^+(a) = 0\) if \(a \leq 0\)), and \(\theta_m\) is the angle between \(\mathrm{m}\) and \(\mathrm{n}\),
           </li>
-          <li>$G(\mathrm{i}, \mathrm{o}, \mathrm{m})$ is the shadowing-masking function of the GGX distribution:
+          <li>\(G(\mathrm{i}, \mathrm{o}, \mathrm{m})\) is the shadowing-masking function of the GGX distribution:
             $$G(\mathrm{i}, \mathrm{o}, \mathrm{m}) = G_1(\mathrm{i},\mathrm{m}) G_1(\mathrm{o}, \mathrm{m})$$
             and
             $$G_1(\mathrm{v},\mathrm{m}) = \chi^+((\mathrm{v} \cdot \mathrm{m}) (\mathrm{v} \cdot \mathrm{n})) \frac{2}{1 + \sqrt{1 + \alpha^2 \tan^2 \theta_v}}$$
-            where $\theta_v$ is the angle between $\mathrm{v}$ and $\mathrm{n}$.
+            where \(\theta_v\) is the angle between \(\mathrm{v}\) and \(\mathrm{n}\).
           </li>
-          <li>$I$ is the "power" of the light source.  See more details on how the power is computed in <a href="#implementation-details">the implementation details section.</a></li>
+          <li>\(I\) is the "power" of the light source.  See more details on how the power is computed in <a href="#implementation-details">the implementation details section.</a></li>
         </ul>
       </p>
 
 
       <h3>Anisotropic Microfacet Shading Model</h2>
 
-      <p>For an anisotropic surface, the NDF is no longer a function only of the angle between the normal and the half vector, but depends on the components of the half vector in the $\mathrm{t}$ and $\mathrm{b}$ directions independently, where $\mathrm{t}$ and $\mathrm{b}$ are the tangent and bitangent vectors in the orthogonal frames supplied by the <tt>TriangleMesh</tt> class.  The model we'll use is almost the same as the isotropic one.  The only differences are in $D$ and $G_1$, which must now be calculated using the tangent space and two roughness parameters $\alpha_X$ and $\alpha_Y$, specificed separately to indicate the width of the NDF in the direction of $\mathrm{t}$ and $\mathrm{b}$ respectively.</p>  
+      <p>For an anisotropic surface, the NDF is no longer a function only of the angle between the normal and the half vector, but depends on the components of the half vector in the \(\mathrm{t}\) and \(\mathrm{b}\) directions independently, where \(\mathrm{t}\) and \(\mathrm{b}\) are the tangent and bitangent vectors in the orthogonal frames supplied by the <tt>TriangleMesh</tt> class.  The model we'll use is almost the same as the isotropic one.  The only differences are in \(D\) and \(G_1\), which must now be calculated using the tangent space and two roughness parameters \(\alpha_X\) and \(\alpha_Y\) specificed separately to indicate the width of the NDF in the direction of \(\mathrm{t}\) and \(\mathrm{b}\) respectively.</p>  
 
-      <p>Consider the coordinate frame with the tangent $\mathrm{t}$ as its x-axis, the bitangent $\mathrm{b}$ as its y-axis, and the surface normal $\mathrm{n}$ as its z-axis.  Let $m_t$, $m_b$, and $m_n$ be the scalars such that 
-      $$\mathrm{m} = m_t \mathrm{t} + m_b \mathrm{b} + m_n \mathrm{n}.$$ (Note that $m_n = \mathrm{m} \cdot \mathrm{n} = \cos \theta_m$, $m_t = \mathrm{m} \cdot \mathrm{t}$, and $m_b = \mathrm{m} \cdot \mathrm{b}$.) Then, the anisotropic version of the GGX distribution is given by:
+      <p>Consider the coordinate frame with the tangent \(\mathrm{t}\) as its x-axis, the bitangent \(\mathrm{b}\) as its y-axis, and the surface normal \(\mathrm{n}\) as its z-axis.  Let \(m_t\), \(m_b\), and \(m_n\) be the scalars such that 
+      $$\mathrm{m} = m_t \mathrm{t} + m_b \mathrm{b} + m_n \mathrm{n}.$$ (Note that \(m_n = \mathrm{m} \cdot \mathrm{n} = \cos \theta_m\), \(m_t = \mathrm{m} \cdot \mathrm{t}\), and \(m_b = \mathrm{m} \cdot \mathrm{b}\).) Then, the anisotropic version of the GGX distribution is given by:
       $$D(\mathrm{m}) = \frac{\chi^+(\mathrm{m} \cdot \mathrm{n})}{ \pi \alpha_X \alpha_Y \bigg(m_n^2 + \frac{m_t^2}{\alpha_X^2} + \frac{m_b^2}{\alpha_Y^2} \bigg)^2}.$$
-      (See if you can show that the above expression is the same as the definition of $D$ in Task 2 when $\alpha_X = \alpha_Y$.)
-      The shadow masking function $G$ is the same as that of the isotropic function, except that the roughness parameter $\alpha$ must be calculated from $\alpha_X$ and $\alpha_Y$ as follows:
+      (See if you can show that the above expression is the same as the definition of \(D\) in Task 2 when \(\alpha_X = \alpha_Y\).)
+      The shadow masking function \(G\) is the same as that of the isotropic function, except that the roughness parameter \(\alpha\) must be calculated from \(\alpha_X\) and \(\alpha_Y\) as follows:
       $$\alpha = \sqrt{\frac{\alpha_X^2 m_t^2 + \alpha_Y^2 m_b^2}{m_t^2 + m_b^2} }.$$
       </p>      
 
@@ -115,25 +115,14 @@ You can pick your favorite language to do the calculations. Please submit a file
           <li><tt>Shading/ShadingApp.cpp</tt></li>
           <li><tt>resources/Shading/shaders/forward/isotropic_microfacet.frag</tt></li>
         </ul>
-        to put the above formulas into action.  After completing this exercise, the rendering of the "material test" scene (3rd scene in the combo box) should look like the image below.
+        to put the above formulas into action.  After completing this exercise, the rendering of the "vinyl" scene should look like the images below.
       </p>
-
-      <p align="center"><img src="images/a2/PA2-aniso-01.png" width="600" /></p>
-
-      <p>We also provide two test scenes: the "anisotropic test scene" and the "vinyl scene".  The renderings produced by the solution systems of the three test scenes are given below:</p>
 
       <table class="table table-bordered">
         <tr>
-          <td align="center"><a href="images/a2/PA2-aniso-02.png"><img src="images/a2/PA2-aniso-02.png" width="300"/></a></td>
-          <td align="center"><a href="images/a2/PA2-aniso-03.png"><img src="images/a2/PA2-aniso-03.png" width="300"/></a></td>
-        </tr>
-        <tr>
-          <td align="center"><a href="images/a2/PA2-aniso-test-01.png"><img src="images/a2/PA2-aniso-test-01.png" width="300"/></a></td>
-          <td align="center"><a href="images/a2/PA2-aniso-test-02.png"><img src="images/a2/PA2-aniso-test-02.png" width="300"/></a></td>
-        </tr>
-        <tr>
-          <td align="center"><a href="images/a2/PA2-vinyl-01.png"><img src="images/a2/PA2-vinyl-01.png" width="300"/></a></td>
-          <td align="center"><a href="images/a2/PA2-vinyl-02.png"><img src="images/a2/PA2-vinyl-02.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/vinyl-forward.png"><img src="images/a2/vinyl-forward.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/vinyl-forward-topview.png"><img src="images/a2/vinyl-forward-topview.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/vinyl-forward-grazingview.png"><img src="images/a2/vinyl-forward-grazingview.png" width="300"/></a></td>
         </tr>
       </table>
 
@@ -147,51 +136,29 @@ You can pick your favorite language to do the calculations. Please submit a file
         so that the forward renderer implements a Blinn-Phong shading model together with a tangent space normal map.  The only difference between this model and the standard version is how the normal at the shaded point is computed.  In the standard version, we just normalize the vector given to us through the varying variable <tt>geom_normal.</tt>  In this version, however, we first need to compute an orthonormal tangent space at the shaded point and then use it, together with the texture value of the normal map, to compute the effective normal.
       </p>
 
-      <p>Let us first discuss the computation of the tangent space.  The vertex shader will pass three varying variables: <tt>geom_normal</tt>, <tt>geom_tangent</tt>, and <tt>geom_bitangent</tt> to the fragment shader.  The vectors contained in these variabled are interpolated from those same vectors at the vertices.  Hence, they are not necessarily orthonormal or even normalized.  To recover, an orthonomal frame ($\mathbf{t}$, $\mathbf{b}$, $\mathbf{n}$), we suggest that you:
+      <p>Let us first discuss the computation of the tangent space.  The vertex shader will pass three varying variables: <tt>geom_normal</tt>, <tt>geom_tangent</tt>, and <tt>geom_bitangent</tt> to the fragment shader.  The vectors contained in these variabled are interpolated from those same vectors at the vertices.  Hence, they are not necessarily orthonormal or even normalized.  To recover an orthonomal frame (\(\mathbf{t}\), \(\mathbf{b}\), \(\mathbf{n}\)), we suggest that you:
       <ol>
-        <li>Normalize the <tt>geom_normal</tt> variable to get the normal vector $\mathbf{n}$.</li>
-        <li>Project <tt>geom_tangent</tt> to the plane perpendicular to $\mathbf{n}$ and then normalize it to get $\mathbf{t}$.</li>
-        <li>Compute the cross product $\tilde{\mathbf{b}} = \mathbf{n} \times \mathbf{t}$.</li>
-        <li>If the dot product between <tt>geom_bitangent</tt> and $\tilde{\mathbf{b}}$ is greater than 0, set $\mathbf{b} = \tilde{\mathbf{b}}$.  Otherwise, set $\mathbf{b} = -\tilde{\mathbf{b}}$.</li>
+        <li>Normalize the <tt>geom_normal</tt> variable to get the normal vector \(\mathbf{n}\).</li>
+        <li>Project <tt>geom_tangent</tt> to the plane perpendicular to \(\mathbf{n}\) and then normalize it to get \(\mathbf{t}\).</li>
+        <li>Compute the cross product \(\tilde{\mathbf{b}} = \mathbf{n} \times \mathbf{t}\).</li>
+        <li>If the dot product between <tt>geom_bitangent</tt> and \(\tilde{\mathbf{b}}\) is greater than 0, set \(\mathbf{b} = \tilde{\mathbf{b}}\).  Otherwise, set \(\mathbf{b} = -\tilde{\mathbf{b}}\).</li>
       </ol>
-      In other words, we want a frame where the normal is parallel to the interpolated value.  The tangent vector is as close as possible to the interpolated value but perpendicular to the normal.  The bitangent is "redefined" to be parallel to the cross product between $\mathbf{n}$ and $\mathbf{t}$, but pointing in the direction that preserves the handedness given by the original mesh data.</p>
+      In other words, we want a frame where the normal is parallel to the interpolated value.  The tangent vector is as close as possible to the interpolated value but perpendicular to the normal.  The bitangent is "redefined" to be parallel to the cross product between \(\mathbf{n}\) and \(\mathbf{t}\), but pointing in the direction that preserves the handedness given by the original mesh data.</p>
 
       <p>Next is the computation of the effective normal.  The normal map encodes the normal texture as a color as follows:
         $$\begin{bmatrix} r \\ g \\ b\end{bmatrix} = \begin{bmatrix} (\bar{\mathbf{n}}_x + 1) /2 \\ (\bar{\mathbf{n}}_y + 1) /2 \\ (\bar{\mathbf{n}}_z + 1) /2 \end{bmatrix}$$
-        where $\bar{\mathbf{n}} = (\bar{\mathbf{n}}_x, \bar{\mathbf{n}}_y, \bar{\mathbf{n}}_z)^T$, in tangent space, being encoded.  You should recover the tangent space normal from the color of the texture at the shaded point.  Then, the effective normal $\mathbf{n}_{\mathrm{eff}}$ is given by:
+        where \(\bar{\mathbf{n}} = (\bar{\mathbf{n}}_x, \bar{\mathbf{n}}_y, \bar{\mathbf{n}}_z)^T\), in tangent space, being encoded.  You should recover the tangent space normal from the color of the texture at the shaded point.  Then, the effective normal \(\mathbf{n}_{\mathrm{eff}}\) is given by:
         $$ \mathbf{n}_{\mathrm{eff}} = \bar{\mathbf{n}}_x \mathbf{t} + \bar{\mathbf{n}}_y \mathbf{b} + \bar{\mathbf{n}}_z \mathbf{n}.$$  Proceed by using the effective normal to shade the fragment.
       </p>
 
-      <p>After implementing the shader, the floor and the cube in the "normal mapping test" scene should become much more interesting:</p>
+      <p>After implementing the shader, the "globe" scene should become much more interesting:</p>
 
       <table class="table table-bordered">
         <tr>
-          <td align="center"><a href="images/a2/PA2-normal-mapping-01.png"><img src="images/a2/PA2-normal-mapping-01.png" width="300"/></a></td>
-          <td align="center"><a href="images/a2/PA2-normal-mapping-02.png"><img src="images/a2/PA2-normal-mapping-02.png" width="300"/></a></td>
-        </tr>
-        <tr>
-          <td align="center"><a href="images/a2/PA2-normal-mapping-03.png"><img src="images/a2/PA2-normal-mapping-03.png" width="300"/></a></td>
-          <td align="center"><a href="images/a2/PA2-normal-mapping-04.png"><img src="images/a2/PA2-normal-mapping-04.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/globe-forward.png"><img src="images/a2/globe-forward.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/globe-forward-closeup.png"><img src="images/a2/globe-forward-closeup.png" width="300"/></a></td>
         </tr>
       </table>
-
-      <p>On the other hand, here is what it would look like if the ground plane and the cube are shaded with standard Blinn-Phong model.</p> 
-
-      <p align="center">
-        <a href="images/a2/PA2-normal-mapping-05.png"><img src="images/a2/PA2-normal-mapping-05.png" width="600"/></a>
-      </p>
-
-      <p>You can see that normal mapping provides more surface details.</p>
-
-      <p>The following are renderings produced by the solution system of the "tangent test scene."</p>
-
-      <table class="table table-bordered">
-        <tr>
-          <td align="center"><a href="images/a2/PA2-tangent-test-01.png"><img src="images/a2/PA2-tangent-test-01.png" width="300"/></a></td>
-          <td align="center"><a href="images/a2/PA2-tangent-test-02.png"><img src="images/a2/PA2-tangent-test-02.png" width="300"/></a></td>
-        </tr>        
-      </table>
-
 
       <h3>Deferred Shading</h3>
 
@@ -203,7 +170,117 @@ You can pick your favorite language to do the calculations. Please submit a file
             <li>Create a separate branch in <tt>ShadingApp::drawContents</tt> that runs when <tt>mode == Mode::Deferred</tt> that first binds the G-buffer FBO, renders the scene with the first-pass shader programs, then binds the buffer that will be input for the sRGB shader and renders a full-screen quad with the ubershader program, providing the G-buffers to the shader programs as textures.</li>
             <li>Retain the third pass that converts to sRGB and writes to the default framebuffer.
         </ul>
-      You may find it helpful to write dummy second-pass shaders that copy the G-buffers straight to the output, so that you can see what data is being stored.  When everything works, you should find that switching between forward and deferred modes has no visible effect on the image.
+      You may find it helpful to write dummy second-pass shaders that copy the G-buffers straight to the output, so that you can see what data is being stored. You can set the uniform <tt>convertToSRGB</tt> in <tt>srgb.frag</tt> to false to turn off gamma correction without changing the pipeline in this case. When everything works, you should find that switching between forward and deferred modes has no visible effect on the image.
+
+      <h2 id="task2">Task 2: Bloom Effect</h2>
+
+      <p>Edit:
+        <ul>
+          <li>the <tt>bloomBuffer</tt> method of the <a href="../student/src/pa6/renderer/PA6Renderer.java">PA6Renderer</a></li>
+        </ul>
+        so that it renders the bloom effect when enabled.
+      </p>
+
+      <p>The bloom is a visual effect that aims to simulate the phenomenon in which imperfections in the optics of the eye (or of camera lenses) produces halos of light around bright objects.  A nice model for this effect is described by <a href="http://dx.doi.org/10.1145/218380.218466">Spencer et al.</a>; essentially it causes the image you see to be convolved with a filter that is very sharp at the center but has long, very faint tails.</p>
+      <table align="center">
+        <tr><td align="center"><img src="images/a2/glare-model.png" width="400"></td></tr>
+      </table>
+      <p>When filtering most parts of the image, it will have essentially no effect, since the tails of the filter are so faint, but when something like the sun comes into the frame, the pixel values are so high that the faint tails of the filter contribute significantly to other parts of the image.</p>
+
+      <p>The problem is, this filter is too big to work with directly: the tails should extend a large fraction of the size of the image.  And worse, it is not separable.  So doing a straight-up space-domain convolution is hopeless.</p>
+
+      <p>Instead, we approximate this filter with the sum of an impulse and several Gaussian filters.  Here is how we did it; the result is that the filter we will use is \[0.8843 \delta(x) + 0.1 g(6.2,x) + 0.012 g(24.9,x) + 0.0027 g(81.0,x) + 0.001 g(263,x)\] where \(g(\sigma, x)\) is a normalized gaussian with standard deviation \(\sigma\). </p>
+
+      <table align="center">
+        <tr><td align="center"><img src="images/a2/glare-fit.png" width="400"></td></tr>
+      </table>
+
+      <p> You'll find these weights and the standard deviations for the kernels in the <tt>bloomFilterScales</tt> and the <tt>bloomFilterStdev</tt> fields, respectively.  There is a parameter <tt>BLOOM_AMP_FACTOR</tt> that you can increase from <tt>1.0</tt> to make the bloom more dramatic, which is fun. </p>
+
+      <p>Then, we convolve the rendered images with 4 Gaussian kernels, each with different width, to blur it.  The results of the convolutions are as follows:        
+      </p>
+
+      <table class="table table-bordered">
+        <tr>
+          <td align="center"><a href="images/a2/sunset-blur-1.png"><img src="images/a2/sunset-blur-1.png" width="150"/></a></td>
+          <td align="center"><a href="images/a2/sunset-blur-2.png"><img src="images/a2/sunset-blur-2.png" width="150"/></a></td>
+          <td align="center"><a href="images/a2/sunset-blur-3.png"><img src="images/a2/sunset-blur-3.png" width="150"/></a></td>
+          <td align="center"><a href="images/a2/sunset-blur-4.png"><img src="images/a2/sunset-blur-4.png" width="150"/></a></td>
+        </tr>
+        <tr>
+          <td align="center">Blur #1</td>
+          <td align="center">Blur #2</td>
+          <td align="center">Blur #3</td>
+          <td align="center">Blur #4</td>
+        </tr>
+      </table>
+
+      <p>We scale each image by the constants stored in <tt>bloomFilterScales</tt> array and add the scaled images to the original image to produce the final image.</p>
+
+      <table align="center">
+        <tr>
+          <td align="center" valign="center">\(k_0\)<a href="images/a2/sunset-no-bloom.png"><img src="images/a2/sunset-no-bloom.png" / width="100"></a></td>
+          <td align="center" valign="center">\(+\)</td>
+          <td align="center" valign="center">\(k_1\)<a href="images/a2/sunset-blur-1.png"><img src="images/a2/sunset-blur-1.png" / width="100"></a></td>
+          <td align="center" valign="center">\(+\)</td>
+          <td align="center" valign="center">\(k_2\)<a href="images/a2/sunset-blur-2.png"><img src="images/a2/sunset-blur-2.png" / width="100"></a></td>
+          <td align="center" valign="center">\(+\)</td>
+          <td align="center" valign="center">\(k_3\)<a href="images/a2/sunset-blur-3.png"><img src="images/a2/sunset-blur-3.png" / width="100"></a></td>
+          <td align="center" valign="center">\(+\)</td>
+          <td align="center" valign="center">\(k_4\)<a href="images/a2/sunset-blur-4.png"><img src="images/a2/sunset-blur-4.png" / width="100"></a></td>
+          <td align="center" valign="center">&nbsp;&nbsp;\(=\)&nbsp;&nbsp;</td>
+          <td align="center" valign="center"><a href="images/a2/sunset-mipmap-bloom.png"><img src="images/a2/sunset-mipmap-bloom.png" / width="100"></a></td>
+        </tr>
+        <tr>
+          <td align="center">Original</td>
+          <td></td>
+          <td align="center">Blur #1</td>
+          <td></td>
+          <td align="center">Blur #2</td>
+          <td></td>
+          <td align="center">Blur #3</td>
+          <td></td>
+          <td align="center">Blur #4</td>
+          <td></td>
+          <td align="center">Final</td>
+        </tr>
+      </table>
+
+      <p>The images below show the differences between the original and the final image with the bloom effect fully applied:</p>
+
+      <table class="table table-bordered">
+        <tr>
+          <td align="center"><a href="images/a2/sunset-no-bloom.png"><img src="images/a2/sunset-no-bloom.png" / width="200"></a></td>
+          <td align="center"><a href="images/a2/sunset-mipmap-bloom.png"><img src="images/a2/sunset-mipmap-bloom.png" / width="200"></a></td>
+          <td align="center"><a href="images/a2/sunset-mipmap-bloom-amp.png"><img src="images/a2/sunset-mipmap-bloom-amp.png" / width="200"></a></td>
+        </tr>
+        <tr>
+          <td align="center"><a href="images/a2/eclipse-no-bloom.png"><img src="images/a2/eclipse-no-bloom.png" / width="200"></a></td>
+          <td align="center"><a href="images/a2/eclipse-mipmap-bloom.png"><img src="images/a2/eclipse-mipmap-bloom.png" / width="200"></a></td>
+          <td align="center"><a href="images/a2/eclipse-mipmap-bloom-amp.png"><img src="images/a2/eclipse-mipmap-bloom-amp.png" / width="200"></a></td>
+        </tr>
+        <tr>
+          <td align="center">Original image</td>
+          <td align="center">Final image</td>
+          <td align="center">Amped up bloom</td>
+        </tr>
+      </table>
+
+      <p>The first part of this task is to implement the effect directly, using the gaussian blur program you developed for PA5.  You will need to use a temporary buffer to hold each blur result and then add it into the main image using additive blending.  Use filter sizes that are 3 times the standard deviation.</p>
+
+      <p>The problem with this approach is that it will be really slow.  Replacing the non-separable glare filter with the sum of gaussians makes it possible to do this in a few seconds a frame by using separable filtering for each of the gaussians.  But it is still just way too slow.  A good way to speed up large blurs is to shrink the image, blur it, and then enlarge it back to size.  If you resample the image so that is is smaller by a factor $\alpha$, then apply a gaussian of width $\alpha\sigma$, then resample back to the original size, the result will be quite a good approximation of blurring the full image by a gaussian of width $\sigma$, as long as $\alpha\sigma$ does not get too small.  (We recommend keeping this effective standard deviation above 4 pixels.)</p>
+
+      <p>You can do this in whatever way you like that produces results that look like the full-res filters but runs at full frame rate.  A way to do this, reusing some machinery you have already built for previous assignments, is to shrink the image successively by powers of 2, in the same way you built the mipmap for PA4, until the size is appropriate, blur using the gaussian filter from PA5, then enlarge it again using the upsampling code from PA3.  If you follow this approach, here is a recommended implementation approach: set up your program so that it shows the following when the "bloom" control is checked:</p>
+      <ul>
+        <li>The rendered image blurred by a single gaussian (for this you just need the gaussian-blur program and some care with swapping of BufferCollections).</li>
+        <li>The rendered image with the blurred image added to it (for this you probably need a temporary buffer where you do the blurring, and you need to figure out how to enable additive blending to merge the blurred image back in).</li>
+        <li>The full model, computed slowly at full resolution (this is just wrapping a loop around the previous one).</li>
+        <li>The rendered image downsampled by a fixed factor, then upsampled again (this requires downsampling, either in a series of small steps like in the mimpap, for which the cubic B-spline reconstruction filter is sufficient as a downsampling filter, or with a new resampling program that can downsample by large factors at once).  Start by using the copy program, resulting in severe aliasing, so you can clearly see what's happening, then switch to nice sampling filters.</li>
+        <li>The rendered image blurred by downsampling, blurring, and upsampling to approximate a large blur kernel.  Compare it to the results of the first step to confirm all the factors are right.</li>
+        <li>The final model.</li>
+      </ul>
+
+      <p>Note that this task may involve the use of one or more shaders which we do not provide to you.  Write your own shaders to get the job done.  It also involes multi-step manipulation of the frame buffer objects and textures, and again we leave it to you to figure out how this should be done.  You are free to declare new fields in the <tt>PA6Renderer</tt> class if needed be.</p>
 
 
       <h3>Framework</h3>
@@ -214,24 +291,13 @@ You can pick your favorite language to do the calculations. Please submit a file
 
       <p align="center"><img src="images/a2/PA2-initial.png" width="600" /></p>
 
-      <p>You can use the combo boxes at the bottom of the window to change the scenes and the renderers.  The program can be controlled using the following mouse and keyboard combinations:
+      <p>The program can be controlled using the following mouse actions:
         <ul>
-          <li>LMB or Shift+LMB: Rotating the camera.</li>
-          <li>Alt+LMB: Translating the camera view point.</li>
-          <li>Ctrl+LMB or Mouse Wheel: Changing the camera zoom.</li>
+          <li>LMB: Rotating the camera.</li>
+          <li>RMB: Translating the camera view point.</li>
+          <li>Scroll: Changing the camera zoom.</li>
         </ul>
-      </p>
-
-      <p>The framework for programming assignments was written in Java 8.  It does not run on older (or netbook) hardware. Known requirements are:
-        <ol>
-          <li>The GPU must support OpenGL 2.1 and GLSL 1.3.</li>
-          <li>The GPU must support the <tt>GL_ARB_texture_rectangle</tt> extension.</li>
-          <li>The GPU must support at least 4 color attachments on a frame buffer object.</li>
-          <li>The GPU must support at least 5 texture targets.</li>
-          <li>The GPU must suport dynamic branches and loops in fragment shaders. </li>
-        </ol>
-        All Gates Hall lab computers have up-to-date GPUs and should be able to run the framework without problems.
-      </p>      
+      </p>    
 
       <h2 id="what-to-submit">What to Submit</h2>
 
@@ -256,6 +322,6 @@ if (mat_hasSpecularTexture) {
       <p>Light sources in this PA are all point light sources and implemented in the <a href="../student/src/cs5625/gfx/light/PointLight.java"><tt>PointLight</tt></a> class.  A point light is specified by three parameters: its position, its color (i.e., power), and its 3 attenuation coefficients.  The power reaching a shaded point is computed in a non-physical manner as follows:
         $$ \mathrm{power} = \frac{color}{A + Bd + Cd^2} $$
       </p>
-      where $d$ is the distance between the light source and the shaded point, $A$ is the constant attenuation coefficient, $B$ is the linear attenuation coefficient, and $C$ is the quadratic attenuation coefficient.  You can see this calculation implemented in the <a href="../student/src/shaders/forward/lambertian.frag">fragment shader of the lambertian material</a>.
+      where \(d\) is the distance between the light source and the shaded point, \(A\) is the constant attenuation coefficient, \(B\) is the linear attenuation coefficient, and \(C\) is the quadratic attenuation coefficient.  You can see this calculation implemented in the <a href="../student/src/shaders/forward/lambertian.frag">fragment shader of the lambertian material</a>.
 
 -->
