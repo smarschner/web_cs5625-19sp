@@ -54,7 +54,7 @@ You can pick your favorite language to do the calculations. Please submit a file
 
       <p>The parameters of the model are strored in the <tt>IsotropicMicrofacet</tt> class, and they are:
         <ul>
-          <li>The diffuse color \(k_d\) in RGBA format;</li>
+          <li>The diffuse color \(k_d\) in RGB format;</li>
           <li>The index of refraction \(\eta\), a scalar;</li>
           <li>The roughness parameter \(\alpha\), a scalar.</li>
         </ul>
@@ -89,10 +89,27 @@ You can pick your favorite language to do the calculations. Please submit a file
         </ul>
       </p>
 
+      <p>When you've completed this section, the "globe" scene should look like this:</p>
+
+      <table class="table table-bordered">
+        <tr>
+          <td align="center"><a href="images/a2/globe-forward-nonormalmap.png"><img src="images/a2/globe-forward-nonormalmap.png" width="300"/></a></td>
+          <td align="center"><a href="images/a2/globe-forward-nonormalmap-closeup.png"><img src="images/a2/globe-forward-nonormalmap-closeup.png" width="300"/></a></td>
+        </tr>
+      </table>
 
       <h3>Programming Task 2: Anisotropic Microfacet Shading Model</h2>
 
       <p>For an anisotropic surface, the NDF is no longer a function only of the angle between the normal and the half vector, but depends on the components of the half vector in the \(\mathrm{t}\) and \(\mathrm{b}\) directions independently, where \(\mathrm{t}\) and \(\mathrm{b}\) are the tangent and bitangent vectors in the orthogonal frames supplied by the <tt>TriangleMesh</tt> class.  The model we'll use is almost the same as the isotropic one.  The only differences are in \(D\) and \(G_1\), which must now be calculated using the tangent space and two roughness parameters \(\alpha_X\) and \(\alpha_Y\) specificed separately to indicate the width of the NDF in the direction of \(\mathrm{t}\) and \(\mathrm{b}\) respectively.</p>  
+
+      <p>Let us first discuss the computation of the tangent space.  The vertex shader will pass three attribute variables, <tt>geom_normal</tt>, <tt>geom_tangent</tt>, and <tt>geom_bitangent</tt>, to the fragment shader.  The vectors contained in these variables are interpolated from those same vectors at the vertices.  Hence, they are not necessarily orthonormal or even normalized.  To recover an orthonomal frame (\(\mathbf{t}\), \(\mathbf{b}\), \(\mathbf{n}\)), we suggest that you:
+      <ol>
+        <li>Normalize the <tt>geom_normal</tt> variable to get the normal vector \(\mathbf{n}\).</li>
+        <li>Project <tt>geom_tangent</tt> to the plane perpendicular to \(\mathbf{n}\) and then normalize it to get \(\mathbf{t}\).</li>
+        <li>Compute the cross product \(\tilde{\mathbf{b}} = \mathbf{n} \times \mathbf{t}\).</li>
+        <li>If the dot product between <tt>geom_bitangent</tt> and \(\tilde{\mathbf{b}}\) is greater than 0, set \(\mathbf{b} = \tilde{\mathbf{b}}\).  Otherwise, set \(\mathbf{b} = -\tilde{\mathbf{b}}\).</li>
+      </ol>
+      In other words, we want a frame where the normal is parallel to the interpolated value.  The tangent vector is as close as possible to the interpolated value but perpendicular to the normal.  The bitangent is "redefined" to be parallel to the cross product between \(\mathbf{n}\) and \(\mathbf{t}\), but pointing in the direction that preserves the handedness given by the original mesh data.</p>
 
       <p>Consider the coordinate frame with the tangent \(\mathrm{t}\) as its x-axis, the bitangent \(\mathrm{b}\) as its y-axis, and the surface normal \(\mathrm{n}\) as its z-axis.  Let \(m_t\), \(m_b\), and \(m_n\) be the scalars such that 
       $$\mathrm{m} = m_t \mathrm{t} + m_b \mathrm{b} + m_n \mathrm{n}.$$ (Note that \(m_n = \mathrm{m} \cdot \mathrm{n} = \cos \theta_m\), \(m_t = \mathrm{m} \cdot \mathrm{t}\), and \(m_b = \mathrm{m} \cdot \mathrm{b}\).) Then, the anisotropic version of the GGX distribution is given by:
@@ -102,12 +119,7 @@ You can pick your favorite language to do the calculations. Please submit a file
       $$\alpha = \sqrt{\frac{\alpha_X^2 m_t^2 + \alpha_Y^2 m_b^2}{m_t^2 + m_b^2} }.$$
       </p>      
 
-      <p>Edit
-        <ul>
-          <li><tt>Shading/ShadingApp.cpp</tt></li>
-          <li><tt>resources/Shading/shaders/forward/anisotropic_microfacet.frag</tt></li>
-        </ul>
-        to put the above formulas into action.  After completing this exercise, the rendering of the "vinyl" scene should look like the images below.
+      <p>Edit <tt>resources/Shading/shaders/forward/anisotropic_microfacet.frag</tt> to put the above formulas into action.  After completing this exercise, the rendering of the "vinyl" scene should look like the images below.
       </p>
 
       <table class="table table-bordered">
@@ -125,22 +137,13 @@ You can pick your favorite language to do the calculations. Please submit a file
           <li><tt>resources/Shading/shaders/forward/isotropic_microfacet.frag</tt></li>
           <li><tt>resources/Shading/shaders/forward/anisotropic_microfacet.frag</tt></li>
         </ul>
-        so that the forward renderer implements a tangent space normal map. The only difference between this model and the standard version is how the normal at the shaded point is computed.  In the standard version, we just normalize the vector given to us through the varying variable <tt>geom_normal.</tt>  In this version, however, we first need to compute an orthonormal tangent space at the shaded point and then use it, together with the texture value of the normal map, to compute the effective normal. For the anisotropic case, we will then need to recompute the orthonormal tangent frame using the new normal.
+        so that the forward renderer implements a tangent space normal map. The only difference between this model and the standard version is how the normal at the shaded point is computed.  In the standard version, we just normalize the vector given to us through the attribute variable <tt>geom_normal.</tt>  In this version, however, we first need to compute the orthonormal tangent space at the shaded point and then use it, together with the texture value of the normal map, to compute the shading normal. For the anisotropic case, we will then need to compute the orthonormal shading frame using this extracted normal.
       </p>
 
-      <p>Let us first discuss the computation of the tangent space.  The vertex shader will pass three varying variables, <tt>geom_normal</tt>, <tt>geom_tangent</tt>, and <tt>geom_bitangent</tt>, to the fragment shader.  The vectors contained in these variables are interpolated from those same vectors at the vertices.  Hence, they are not necessarily orthonormal or even normalized.  To recover an orthonomal frame (\(\mathbf{t}\), \(\mathbf{b}\), \(\mathbf{n}\)), we suggest that you:
-      <ol>
-        <li>Normalize the <tt>geom_normal</tt> variable to get the normal vector \(\mathbf{n}\).</li>
-        <li>Project <tt>geom_tangent</tt> to the plane perpendicular to \(\mathbf{n}\) and then normalize it to get \(\mathbf{t}\).</li>
-        <li>Compute the cross product \(\tilde{\mathbf{b}} = \mathbf{n} \times \mathbf{t}\).</li>
-        <li>If the dot product between <tt>geom_bitangent</tt> and \(\tilde{\mathbf{b}}\) is greater than 0, set \(\mathbf{b} = \tilde{\mathbf{b}}\).  Otherwise, set \(\mathbf{b} = -\tilde{\mathbf{b}}\).</li>
-      </ol>
-      In other words, we want a frame where the normal is parallel to the interpolated value.  The tangent vector is as close as possible to the interpolated value but perpendicular to the normal.  The bitangent is "redefined" to be parallel to the cross product between \(\mathbf{n}\) and \(\mathbf{t}\), but pointing in the direction that preserves the handedness given by the original mesh data.</p>
-
-      <p>Next is the computation of the effective normal.  The normal map encodes the normal texture as a color as follows:
+      <p>The normal map encodes the shading normal as a color as follows:
         $$\begin{bmatrix} r \\ g \\ b\end{bmatrix} = \begin{bmatrix} (\bar{\mathbf{n}}_x + 1) /2 \\ (\bar{\mathbf{n}}_y + 1) /2 \\ (\bar{\mathbf{n}}_z + 1) /2 \end{bmatrix}$$
-        where \(\bar{\mathbf{n}} = (\bar{\mathbf{n}}_x, \bar{\mathbf{n}}_y, \bar{\mathbf{n}}_z)^T\), in tangent space, being encoded.  You should recover the tangent space normal from the color of the texture at the shaded point.  Then, the effective normal \(\mathbf{n}_{\mathrm{eff}}\) is given by:
-        $$ \mathbf{n}_{\mathrm{eff}} = \text{normalize}(s\bar{\mathbf{n}}_x \mathbf{t} + s\bar{\mathbf{n}}_y \mathbf{b} + \bar{\mathbf{n}}_z \mathbf{n})$$ where \(s\) is a scalar given by the uniform <tt>mat_normalTextureScale</tt>. Proceed by using the effective normal to shade the fragment, recomputing the tangent and bitangent as necessary using the steps above.
+        where \(\bar{\mathbf{n}} = (\bar{\mathbf{n}}_x, \bar{\mathbf{n}}_y, \bar{\mathbf{n}}_z)^T\), in tangent space, being encoded.  You should recover the tangent space normal from the color of the texture at the shaded point.  Then, the shading normal \(\mathbf{n}_{\mathrm{shading}}\) is given by:
+        $$ \mathbf{n}_{\mathrm{shading}} = \text{normalize}(s\bar{\mathbf{n}}_x \mathbf{t} + s\bar{\mathbf{n}}_y \mathbf{b} + \bar{\mathbf{n}}_z \mathbf{n})$$ where \(s\) is a scalar given by the uniform <tt>mat_normalTextureScale</tt>. Proceed by using the shading normal to shade the fragment, computing the shading tangent and shading bitangent as necessary using the steps above.
       </p>
 
       <p>After implementing the shader, the "globe" scene should become much more interesting:</p>
@@ -182,7 +185,7 @@ You can pick your favorite language to do the calculations. Please submit a file
 
       <p>The problem is, this filter is too big to work with directly: the tails should extend a large fraction of the size of the image.  And worse, it is not separable.  So doing a straight-up space-domain convolution is hopeless.</p>
 
-      <p>Instead, we approximate this filter with the sum of an impulse and several Gaussian filters.  Here is how we did it; the result is that the filter we will use is \[0.8843 \delta(x) + 0.1 g(6.2,x) + 0.012 g(24.9,x) + 0.0027 g(81.0,x) + 0.001 g(263,x)\] where \(g(\sigma, x)\) is a normalized Gaussian with standard deviation \(\sigma\). </p>
+      <p>Instead, we approximate this filter with the sum of an impulse and several Gaussian filters.  The result is that the filter we will use is \[0.8843 \delta(x) + 0.1 g(6.2,x) + 0.012 g(24.9,x) + 0.0027 g(81.0,x) + 0.001 g(263,x)\] where \(g(\sigma, x)\) is a normalized Gaussian with standard deviation \(\sigma\). </p>
 
       <table align="center">
         <tr><td align="center"><img src="images/a2/glare-fit.png" width="400"></td></tr>
