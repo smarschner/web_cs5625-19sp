@@ -2,9 +2,9 @@
         src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
 </script>
 
-<p><strong>Due: Tuesday Mar 5 2019 (11:59pm).</strong> Work on your own or in groups of 2, as you prefer. This assignment has a written task and 2 programming tasks.</p>
+<p><strong>Due: Tuesday Mar 5 2019 (11:59pm).</strong> Work on your own or in groups of 2, as you prefer. This assignment has a written task and 5 programming tasks.</p>
 
-<h2>Written Part</h2>
+<h2>Written Task</h2>
 
 <p>In this written assignment, we will deal with tangent vectors and shading frames. We’ve seen in class that we can compute tangent frames from the texture coordinates.  To recap: the basic idea is that we can define a linear mapping from 2D texture coordinates to 3D coordinates:  \(f(u, v) = (x, y, z)\). The derivative of this mapping gives us tangent vectors in the \(u\) and \(v\) directions per triangle. Then we can average the triangles' tangent vectors to get vertex tangents, in the same way as we do for normal vectors.</p>
 
@@ -38,23 +38,15 @@
 
 You can pick your favorite language to do the calculations. Please submit a file with your answer to c), e), f), g) and h).</p>
 
-<!--
-      <h2>Programming Part</h2>
-      
-      <p>In this programming assignment, you will implement two different approaches to computing shaded images: forward rendering and deferred shading.  Within these two frameworks, you'll implement a set of shading models: Blinn-Phong shading (for comparison), Microfacet shading in both isotropic and anisotropic variants, and normal mapping to add lightweight surface relief.  To these shading models you'll add a post-processing pass that simulates bloom from bright image features, including directly viewed light sources and bright reflections.</p>
 
-      <h3>Forward Shading, Deferred Shading, and post-processing</h3>
+      <h2>Programming Tasks</h2>
 
-      <p>In this assignment there are two overal modes of operation: forward shading, which is the familiar process in which fragments are shaded immediately as each triangle is rasterized, and deferred shading, in which the first rendering pass simply writes the shader inputs to a set of G-buffers, and the actual shading is computed in a second pass.  For this assignment the point is just to implement the two, so we compute the same results in both modes.</p>
-
-      <p>In both forward and deferred modes, the shaded fragments are written to a buffer that is then processed in a final filtering pass, in which we apply a bloom filter.  This is simply a convolution filter with a particular analytically defined filter, but it is accelerated using an approximation in terms of several Gaussian filters, in order to make it faster.</p>
-
-      <p>We recommend implementing everything in the forward path first, before implementing the deferred shading path and porting the shaders to that context.  You may find it useful to share code between the fragment shaders for the two paths by using shader code concatenation.  Once you have either or both paths working you can implement the bloom filter.</p>
+      <p>In this programming assignment, you will implement two different approaches to computing shaded images: forward rendering and deferred shading.  Within these two frameworks, you'll implement a set of shading models: Microfacet shading in both isotropic and anisotropic variants, and normal mapping to add lightweight surface relief.  In a separate program, you'll implement a post-processing operation that simulates bloom from bright image features, including directly viewed light sources and bright reflections.</p>
 
 
-      <h3>Isotropic Microfacet Shading Model</h3>
+      <h3>Programming Task 1: Isotropic Microfacet Shading Model</h3>
 
-      <p>The framework comes with a basic forward rendering path implemented that supports three materials: <tt>IsotropicMicrofacet</tt>, <tt>AnisotropicMicrofacet</tt>, and <tt>NormalMapBlinnPhong</tt>.  However, the shader implementations of all these materials only implement constant-color shading.</p>
+      <p>The framework comes with a basic forward rendering path implemented that supports two materials: <tt>IsotropicMicrofacet</tt> and <tt>AnisotropicMicrofacet</tt>.  However, the shader implementations of all these materials only implement constant-color shading.</p>
 
       <p>To enable isotropic microfacet shading, edit <tt>resources/Shading/shaders/forward/isotropic_microfacet.frag</tt>
         to implement the microfacet reflectance model described in the paper <a href="http://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.html">"Microfacet Models for Refraction through Rough Surfaces"</a> by Walter et al., using the GGX model for the normal distribution function (NDF) that was introduced (to graphics) by that paper.  (Despite the name, the paper talks about models for both refraction and reflection.  However, we will only use the reflection part.)
@@ -98,7 +90,7 @@ You can pick your favorite language to do the calculations. Please submit a file
       </p>
 
 
-      <h3>Anisotropic Microfacet Shading Model</h2>
+      <h3>Programming Task 2: Anisotropic Microfacet Shading Model</h2>
 
       <p>For an anisotropic surface, the NDF is no longer a function only of the angle between the normal and the half vector, but depends on the components of the half vector in the \(\mathrm{t}\) and \(\mathrm{b}\) directions independently, where \(\mathrm{t}\) and \(\mathrm{b}\) are the tangent and bitangent vectors in the orthogonal frames supplied by the <tt>TriangleMesh</tt> class.  The model we'll use is almost the same as the isotropic one.  The only differences are in \(D\) and \(G_1\), which must now be calculated using the tangent space and two roughness parameters \(\alpha_X\) and \(\alpha_Y\) specificed separately to indicate the width of the NDF in the direction of \(\mathrm{t}\) and \(\mathrm{b}\) respectively.</p>  
 
@@ -113,7 +105,7 @@ You can pick your favorite language to do the calculations. Please submit a file
       <p>Edit
         <ul>
           <li><tt>Shading/ShadingApp.cpp</tt></li>
-          <li><tt>resources/Shading/shaders/forward/isotropic_microfacet.frag</tt></li>
+          <li><tt>resources/Shading/shaders/forward/anisotropic_microfacet.frag</tt></li>
         </ul>
         to put the above formulas into action.  After completing this exercise, the rendering of the "vinyl" scene should look like the images below.
       </p>
@@ -126,14 +118,14 @@ You can pick your favorite language to do the calculations. Please submit a file
         </tr>
       </table>
 
-      <h3>Tangent-Space Normal Mapping</h3>
+      <h3>Programming Task 3: Tangent-Space Normal Mapping</h3>
 
       <p>Edit:
         <ul>
-          <li><tt>Shading/ShadingApp.cpp</tt></li>
-          <li><tt>resources/Shading/shaders/forward/normalmap_blinnphong.frag</tt></li>
+          <li><tt>resources/Shading/shaders/forward/isotropic_microfacet.frag</tt></li>
+          <li><tt>resources/Shading/shaders/forward/anisotropic_microfacet.frag</tt></li>
         </ul>
-        so that the forward renderer implements a Blinn-Phong shading model together with a tangent space normal map.  The only difference between this model and the standard version is how the normal at the shaded point is computed.  In the standard version, we just normalize the vector given to us through the varying variable <tt>geom_normal.</tt>  In this version, however, we first need to compute an orthonormal tangent space at the shaded point and then use it, together with the texture value of the normal map, to compute the effective normal.
+        so that the forward renderer implements a tangent space normal map. The only difference between this model and the standard version is how the normal at the shaded point is computed.  In the standard version, we just normalize the vector given to us through the varying variable <tt>geom_normal.</tt>  In this version, however, we first need to compute an orthonormal tangent space at the shaded point and then use it, together with the texture value of the normal map, to compute the effective normal. For the anisotropic case, we will then need to recompute the orthonormal tangent frame using the new normal.
       </p>
 
       <p>Let us first discuss the computation of the tangent space.  The vertex shader will pass three varying variables: <tt>geom_normal</tt>, <tt>geom_tangent</tt>, and <tt>geom_bitangent</tt> to the fragment shader.  The vectors contained in these variabled are interpolated from those same vectors at the vertices.  Hence, they are not necessarily orthonormal or even normalized.  To recover an orthonomal frame (\(\mathbf{t}\), \(\mathbf{b}\), \(\mathbf{n}\)), we suggest that you:
@@ -148,7 +140,7 @@ You can pick your favorite language to do the calculations. Please submit a file
       <p>Next is the computation of the effective normal.  The normal map encodes the normal texture as a color as follows:
         $$\begin{bmatrix} r \\ g \\ b\end{bmatrix} = \begin{bmatrix} (\bar{\mathbf{n}}_x + 1) /2 \\ (\bar{\mathbf{n}}_y + 1) /2 \\ (\bar{\mathbf{n}}_z + 1) /2 \end{bmatrix}$$
         where \(\bar{\mathbf{n}} = (\bar{\mathbf{n}}_x, \bar{\mathbf{n}}_y, \bar{\mathbf{n}}_z)^T\), in tangent space, being encoded.  You should recover the tangent space normal from the color of the texture at the shaded point.  Then, the effective normal \(\mathbf{n}_{\mathrm{eff}}\) is given by:
-        $$ \mathbf{n}_{\mathrm{eff}} = \bar{\mathbf{n}}_x \mathbf{t} + \bar{\mathbf{n}}_y \mathbf{b} + \bar{\mathbf{n}}_z \mathbf{n}.$$  Proceed by using the effective normal to shade the fragment.
+        $$ \mathbf{n}_{\mathrm{eff}} = \text{normalize}(s\bar{\mathbf{n}}_x \mathbf{t} + s\bar{\mathbf{n}}_y \mathbf{b} + \bar{\mathbf{n}}_z \mathbf{n})$$ where \(s\) is a scalar given by the uniform <tt>mat_normalTextureScale</tt>. Proceed by using the effective normal to shade the fragment, recomputing the tangent and bitangent as necessary using the steps above.
       </p>
 
       <p>After implementing the shader, the "globe" scene should become much more interesting:</p>
@@ -160,9 +152,9 @@ You can pick your favorite language to do the calculations. Please submit a file
         </tr>
       </table>
 
-      <h3>Deferred Shading</h3>
+      <h3>Programming Task 4: Deferred Shading</h3>
 
-      <p>Now that everything works in forward shading mode, you're ready to implement the deferred shading pipeline.  In the shader code this mainly involves moving the same fragment shdaer code around to split it into a first-pass shader for each material and a second-pass ubershader.  The first-pass shaders have the same inputs as the corresponding forward-pass shaders and write the intermediate data into some G-buffers.  The second-pass ubershader calls the same code that is used in forward rendering to compute the shaded fragment colors.</p>
+      <p>Now that everything works in forward shading mode, you're ready to implement the deferred shading pipeline.  In the shader code this mainly involves moving the same fragment shader code around to split it into a first-pass shader for each material and a second-pass ubershader; stubs for this have been provided in <tt>resources/Shading/shaders/deferred/</tt> directory.  The first-pass shaders have the same inputs as the corresponding forward-pass shaders and write the intermediate data into some G-buffers.  The second-pass ubershader calls the same code that is used in forward rendering to compute the shaded fragment colors.</p>
 
       <p>The larger difference is on the C++ side.  You will need to make several additions:
         <ul>
@@ -172,11 +164,12 @@ You can pick your favorite language to do the calculations. Please submit a file
         </ul>
       You may find it helpful to write dummy second-pass shaders that copy the G-buffers straight to the output, so that you can see what data is being stored. You can set the uniform <tt>convertToSRGB</tt> in <tt>srgb.frag</tt> to false to turn off gamma correction without changing the pipeline in this case. When everything works, you should find that switching between forward and deferred modes has no visible effect on the image.
 
-      <h2 id="task2">Task 2: Bloom Effect</h2>
+      <h3>Programming Task 5: Bloom Effect</h3>
 
       <p>Edit:
         <ul>
-          <li>the <tt>bloomBuffer</tt> method of the <a href="../student/src/pa6/renderer/PA6Renderer.java">PA6Renderer</a></li>
+          <li><tt>Bloom/BloomApp.cpp</tt></li>
+          <li><tt>resources/Bloom/shaders/bloom.frag</tt></li>
         </ul>
         so that it renders the bloom effect when enabled.
       </p>
@@ -189,13 +182,13 @@ You can pick your favorite language to do the calculations. Please submit a file
 
       <p>The problem is, this filter is too big to work with directly: the tails should extend a large fraction of the size of the image.  And worse, it is not separable.  So doing a straight-up space-domain convolution is hopeless.</p>
 
-      <p>Instead, we approximate this filter with the sum of an impulse and several Gaussian filters.  Here is how we did it; the result is that the filter we will use is \[0.8843 \delta(x) + 0.1 g(6.2,x) + 0.012 g(24.9,x) + 0.0027 g(81.0,x) + 0.001 g(263,x)\] where \(g(\sigma, x)\) is a normalized gaussian with standard deviation \(\sigma\). </p>
+      <p>Instead, we approximate this filter with the sum of an impulse and several Gaussian filters.  Here is how we did it; the result is that the filter we will use is \[0.8843 \delta(x) + 0.1 g(6.2,x) + 0.012 g(24.9,x) + 0.0027 g(81.0,x) + 0.001 g(263,x)\] where \(g(\sigma, x)\) is a normalized Gaussian with standard deviation \(\sigma\). </p>
 
       <table align="center">
         <tr><td align="center"><img src="images/a2/glare-fit.png" width="400"></td></tr>
       </table>
 
-      <p> You'll find these weights and the standard deviations for the kernels in the <tt>bloomFilterScales</tt> and the <tt>bloomFilterStdev</tt> fields, respectively.  There is a parameter <tt>BLOOM_AMP_FACTOR</tt> that you can increase from <tt>1.0</tt> to make the bloom more dramatic, which is fun. </p>
+      <p> You'll find these weights and the standard deviations for the kernels in the <tt>bloomFilterScales</tt> and the <tt>bloomFilterStdev</tt> members, respectively.  There is a parameter <tt>bloomAmpFactor</tt> that is controlled by the slider that increases the weights of the more blurred kernels. This amplification is calculated and stored in the <tt>weights</tt> variable in the <tt>drawContents()</tt> method.</p>
 
       <p>Then, we convolve the rendered images with 4 Gaussian kernels, each with different width, to blur it.  The results of the convolutions are as follows:        
       </p>
@@ -266,62 +259,58 @@ You can pick your favorite language to do the calculations. Please submit a file
         </tr>
       </table>
 
-      <p>The first part of this task is to implement the effect directly, using the gaussian blur program you developed for PA5.  You will need to use a temporary buffer to hold each blur result and then add it into the main image using additive blending.  Use filter sizes that are 3 times the standard deviation.</p>
+      <p>We have included an implementation of this effect, which you can view by changing the mode to "Brute Force Bloom". It uses a temporary buffer to hold each blur result and then adds them into the original image as another pass.  It uses filter sizes that are 3 times the standard deviation. Because Gaussian filters are separable, it performs each blurring operation in two passes, once for each image dimension.</p>
 
-      <p>The problem with this approach is that it will be really slow.  Replacing the non-separable glare filter with the sum of gaussians makes it possible to do this in a few seconds a frame by using separable filtering for each of the gaussians.  But it is still just way too slow.  A good way to speed up large blurs is to shrink the image, blur it, and then enlarge it back to size.  If you resample the image so that is is smaller by a factor $\alpha$, then apply a gaussian of width $\alpha\sigma$, then resample back to the original size, the result will be quite a good approximation of blurring the full image by a gaussian of width $\sigma$, as long as $\alpha\sigma$ does not get too small.  (We recommend keeping this effective standard deviation above 4 pixels.)</p>
+      <p>The problem with this approach is that it is really slow. Depending on your setup, it may grind your program to a halt, or your graphics card might just give up. The issue is that the large blur operations need to access too many pixels of the source image in each pass. A good way to speed up large blurs is to shrink the image, blur it, and then enlarge it back to size.  If you resample the image so that is is smaller by a factor \(\alpha\), then apply a Gaussian of width \(\alpha\sigma\), then resample back to the original size, the result will be quite a good approximation of blurring the full image by a Gaussian of width \(\sigma\), as long as \(\alpha\sigma\) does not get too small.  (We recommend keeping this effective standard deviation above 4 pixels.)</p>
 
-      <p>You can do this in whatever way you like that produces results that look like the full-res filters but runs at full frame rate.  A way to do this, reusing some machinery you have already built for previous assignments, is to shrink the image successively by powers of 2, in the same way you built the mipmap for PA4, until the size is appropriate, blur using the gaussian filter from PA5, then enlarge it again using the upsampling code from PA3.  If you follow this approach, here is a recommended implementation approach: set up your program so that it shows the following when the "bloom" control is checked:</p>
+      <p>We recommend doing this by taking advantage of the machinery already available to you as part of the graphics pipeline. In particular, mipmaps are an effective way of shrinking an image down to scales that are appropriate to blur efficiently; furthermore, you can use built-in sampling texture sampling filters to resample blurred images to return them to their original size. The process for this is explained below:</p>
       <ul>
-        <li>The rendered image blurred by a single gaussian (for this you just need the gaussian-blur program and some care with swapping of BufferCollections).</li>
-        <li>The rendered image with the blurred image added to it (for this you probably need a temporary buffer where you do the blurring, and you need to figure out how to enable additive blending to merge the blurred image back in).</li>
-        <li>The full model, computed slowly at full resolution (this is just wrapping a loop around the previous one).</li>
-        <li>The rendered image downsampled by a fixed factor, then upsampled again (this requires downsampling, either in a series of small steps like in the mimpap, for which the cubic B-spline reconstruction filter is sufficient as a downsampling filter, or with a new resampling program that can downsample by large factors at once).  Start by using the copy program, resulting in severe aliasing, so you can clearly see what's happening, then switch to nice sampling filters.</li>
-        <li>The rendered image blurred by downsampling, blurring, and upsampling to approximate a large blur kernel.  Compare it to the results of the first step to confirm all the factors are right.</li>
-        <li>The final model.</li>
+        <li>Take the target texture of the sun scene pass and generate a mipmap of it (look in <tt>GLWrap::GLTexture2D</tt> for a helpful function here.)</li>
+        <li>Calculate the levels of the mipmap which require blurring; these should be based on the Gaussian standard deviations and the maximum blur window.</li>
+        <li>For each of the levels calculated above, perform a Gaussian blur at the appropriate scale. You can use the provided <tt>gaussianBlurPass()</tt> method to do this.
+        You can perform each pass into a mipmap associated with a single texture as long as the target texture has had mipmaps allocated appropriately.</li>
+        <li>Perform a pass that takes the blurred images along with the original image and combines them into a single image using the weights described above. If the blurred images are stored at different levels of a mipmap, you need to <a href="https://www.khronos.org/opengl/wiki/Sampler_Object">set the texture's minification filter</a> to <tt>GL_LINEAR_MIPMAP_NEAREST</tt> to be able to access the appropriate mipmap levels. The GLSL function <a href="https://www.khronos.org/opengl/wiki/Sampler_(GLSL)#Lod_texture_access"><tt>textureLod</tt></a> can sample from a given mipmap level.</li>
+        <li>Perform a final pass to do sRGB conversion when rendering to the screen.</li>
       </ul>
-
-      <p>Note that this task may involve the use of one or more shaders which we do not provide to you.  Write your own shaders to get the job done.  It also involes multi-step manipulation of the frame buffer objects and textures, and again we leave it to you to figure out how this should be done.  You are free to declare new fields in the <tt>PA6Renderer</tt> class if needed be.</p>
 
 
       <h3>Framework</h3>
 
-      Needs updating for 2019.
+      <p>The code for this assignment is included in <a href="https://github.coecis.cornell.edu/cs5625/Spring19Framework">the class repository</a> as a new commit. We've included a couple new libraries for this part, so please run <tt>git submodule update --recursive</tt> after pulling to download the necessary additional components. Remember to rerun CMake as well; you may need to remove your build directory and create a fresh one to stop cached settings from carrying over from the previous assignment. This will create <tt>Shading</tt> and <tt>Bloom</tt> compilation targets.</p>
 
-      <p>The <tt>student</tt> folder contains an Eclipse project that contains all the relevant source code.  The class <tt><a href="../student/src/pa1/PA1.java">pa1.PA1</a></tt> implements a program that loads and renders three 3D scenes.  Running the program, you should see the following window:</p>
+      <p>We've added a number of classes for dealing with 3D scenes which are found in the <tt>Common</tt> directory. You shouldn't need to modify any of these, but if you're curious how a scene is represented, that is the place to look. In particular, objects in a scene are referenced in a scene graph, where each node in a tree has a transformation relative to its parent. Scenes are read in using a library called the Open Asset Import Library, or <a href="http://www.assimp.org/">Assimp</a>. Our scenes are specified in COLLADA format, but Assimp can be configured to read in many different file formats. Materials are specified separately in an XML file; see the comments <tt>Common/Material.hpp</tt> for more information. Please be aware that these scene files may change in a future assignment.</p>
 
-      <p align="center"><img src="images/a2/PA2-initial.png" width="600" /></p>
-
-      <p>The program can be controlled using the following mouse actions:
+      <p>The Shading target program includes an interactive camera can be controlled using the following mouse actions:
         <ul>
-          <li>LMB: Rotating the camera.</li>
+          <li>LMB: Orbiting the camera.</li>
           <li>RMB: Translating the camera view point.</li>
           <li>Scroll: Changing the camera zoom.</li>
         </ul>
       </p>    
 
-      <h2 id="what-to-submit">What to Submit</h2>
+      <h3 id="what-to-submit">What to Submit</h3>
 
-      <p>You should submit a ZIP file containing all the source codes and data in the <tt>PA1/student</tt> directory.  All the code you have written should be well commented and easy to read, and header comments for all modified files should appropriately indicate authorship.  Be sure to cite sources for any code or formulas that came from anywhere other than your head or this assignment document.  Also, put in the directory a readme file explaining any implementation choices you made or difficulties you encountered.</p>
+      <p>You should submit a ZIP file containing all the source codes and data in the <tt>Shading</tt>, <tt>Bloom</tt>, and <tt>resources</tt> directories.  All the code you have written should be well commented and easy to read, and header comments for all modified files should appropriately indicate authorship.  Be sure to cite sources for any code or formulas that came from anywhere other than your head or this assignment document.  Also, put in the directory a README file explaining any implementation choices you made or difficulties you encountered.</p>
 
-      <h2 id="implementation-details">Implementation Details</h2>
+      <h3 id="implementation-details">Implementation Details</h3>
 
       <h4>Use of Textures</h4>
 
-      <p>Some material properties are stored as a scalar/vector value and a texture.  For example, in the <a href="../student/src/cs5625/gfx/material/BlinnPhongMaterial.java"><tt>BlinnPhongMaterial</tt></a> class, there is both the <tt>specularColor</tt> field and teh <tt>specularTexture</tt> field.  In such a case, the scalar/vector value must be defined, but the texture can be left unspecified (i.e., null).</p>
+      <p>Some material properties are stored as a scalar/vector value and a texture.  For example, in the <tt>IsotropicMicrofacet</tt> class, there is both the <tt>alpha</tt> field and the <tt>alphaTexture</tt> field.  In such a case, the scalar/vector value must be defined, but the texture can be left unspecified (i.e., null).</p>
 
-      <p>In the corresponding fragment shader, there will be 3 uniforms related to the material parameter.  One uniform corresponds to the scalar/vector value (for example, <tt>mat_specular</tt>).  One uniform serves as a flag telling whether there exists the corresponding texture (for example, <tt>mat_hasSpecularTexture</tt>).  One uniform corresponds to the texture (for example, <tt>mat_specularTexture</tt>).  If the texture is undefined, you should use the scalar/vector value to calculate shading.  If the texture is undefined, you should fetch the texture value, multiply it with the scalar/vector value, and use the product to compute shading.  For example, we might compute the specular value that will used later for shading in the fragment shader as follows:</p>
+      <p>In the corresponding fragment shader, there will be 3 uniforms related to the material parameter.  One uniform corresponds to the scalar/vector value (for example, <tt>mat_alpha</tt>).  One uniform serves as a flag telling whether there exists the corresponding texture (for example, <tt>mat_hasAlphaTexture</tt>).  One uniform corresponds to the texture (for example, <tt>mat_alphaTexture</tt>).  If the texture is undefined, you should use the scalar/vector value to calculate shading.  If the texture is undefined, you should fetch the texture value, multiply it with the scalar/vector value, and use the product to compute shading.  For example, we might compute the alpha value that will used later for shading in the fragment shader as follows:</p>
 
       <pre>
-vec3 specular = mat_specular;
-if (mat_hasSpecularTexture) {
-  specular *= texture2D(mat_specularTexture, geom_texCoord).xyz;
+float alpha = mat_alpha;
+if (mat_hasAlphaTexture) {
+  alpha *= texture(mat_alphaTexture, geom_texCoord).x;
 }</pre>
 
       <h4>Point Light Sources</h4>
 
-      <p>Light sources in this PA are all point light sources and implemented in the <a href="../student/src/cs5625/gfx/light/PointLight.java"><tt>PointLight</tt></a> class.  A point light is specified by three parameters: its position, its color (i.e., power), and its 3 attenuation coefficients.  The power reaching a shaded point is computed in a non-physical manner as follows:
+      <p>Light sources in this assignment are all point light sources and implemented in the <tt>PointLight</tt> class in <tt>Common/Scene.hpp</tt>.  A point light is specified by three parameters: its position, its color (i.e., power), and its 3 attenuation coefficients.  The power reaching a shaded point is computed in a non-physical manner as follows:
         $$ \mathrm{power} = \frac{color}{A + Bd + Cd^2} $$
       </p>
-      where \(d\) is the distance between the light source and the shaded point, \(A\) is the constant attenuation coefficient, \(B\) is the linear attenuation coefficient, and \(C\) is the quadratic attenuation coefficient.  You can see this calculation implemented in the <a href="../student/src/shaders/forward/lambertian.frag">fragment shader of the lambertian material</a>.
+      where \(d\) is the distance between the light source and the shaded point, \(A\) is the constant attenuation coefficient, \(B\) is the linear attenuation coefficient, and \(C\) is the quadratic attenuation coefficient.
 
--->
+
