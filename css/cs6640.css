@@ -151,13 +151,17 @@ div.homework {
   background-color: #ddd;
 }
 div.homework h3 {
-  font-size: 20px;
+  font-size: 18px;
   margin-top: 0ex;
   margin-bottom: 0ex;
 }
 div.accordion-inner {
   margin-top: 15px;
   padding-top: 15px;
+}
+.homework .accordion-inner h3 {
+  margin-bottom: 2ex;
+  margin-top: 4ex;
 }
 div.accordion-group {
   margin-top: 20px;

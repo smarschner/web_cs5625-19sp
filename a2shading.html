@@ -97,8 +97,8 @@ You can pick your favorite language to do the calculations. Please submit a file
       <p>Consider the coordinate frame with the tangent \(\mathrm{t}\) as its x-axis, the bitangent \(\mathrm{b}\) as its y-axis, and the surface normal \(\mathrm{n}\) as its z-axis.  Let \(m_t\), \(m_b\), and \(m_n\) be the scalars such that 
       $$\mathrm{m} = m_t \mathrm{t} + m_b \mathrm{b} + m_n \mathrm{n}.$$ (Note that \(m_n = \mathrm{m} \cdot \mathrm{n} = \cos \theta_m\), \(m_t = \mathrm{m} \cdot \mathrm{t}\), and \(m_b = \mathrm{m} \cdot \mathrm{b}\).) Then, the anisotropic version of the GGX distribution is given by:
       $$D(\mathrm{m}) = \frac{\chi^+(\mathrm{m} \cdot \mathrm{n})}{ \pi \alpha_X \alpha_Y \bigg(m_n^2 + \frac{m_t^2}{\alpha_X^2} + \frac{m_b^2}{\alpha_Y^2} \bigg)^2}.$$
-      (See if you can show that the above expression is the same as the definition of \(D\) in Task 2 when \(\alpha_X = \alpha_Y\).)
-      The shadow masking function \(G\) is the same as that of the isotropic function, except that the roughness parameter \(\alpha\) must be calculated from \(\alpha_X\) and \(\alpha_Y\) as follows:
+      (See if you can show that the above expression is the same as the definition of \(D\) in Task 1 when \(\alpha_X = \alpha_Y\).)
+      The shadowing-masking function \(G\) is the same as that of the isotropic function, except that the roughness parameter \(\alpha\) must be calculated from \(\alpha_X\) and \(\alpha_Y\) as follows:
       $$\alpha = \sqrt{\frac{\alpha_X^2 m_t^2 + \alpha_Y^2 m_b^2}{m_t^2 + m_b^2} }.$$
       </p>      
 
@@ -128,7 +128,7 @@ You can pick your favorite language to do the calculations. Please submit a file
         so that the forward renderer implements a tangent space normal map. The only difference between this model and the standard version is how the normal at the shaded point is computed.  In the standard version, we just normalize the vector given to us through the varying variable <tt>geom_normal.</tt>  In this version, however, we first need to compute an orthonormal tangent space at the shaded point and then use it, together with the texture value of the normal map, to compute the effective normal. For the anisotropic case, we will then need to recompute the orthonormal tangent frame using the new normal.
       </p>
 
-      <p>Let us first discuss the computation of the tangent space.  The vertex shader will pass three varying variables: <tt>geom_normal</tt>, <tt>geom_tangent</tt>, and <tt>geom_bitangent</tt> to the fragment shader.  The vectors contained in these variabled are interpolated from those same vectors at the vertices.  Hence, they are not necessarily orthonormal or even normalized.  To recover an orthonomal frame (\(\mathbf{t}\), \(\mathbf{b}\), \(\mathbf{n}\)), we suggest that you:
+      <p>Let us first discuss the computation of the tangent space.  The vertex shader will pass three varying variables, <tt>geom_normal</tt>, <tt>geom_tangent</tt>, and <tt>geom_bitangent</tt>, to the fragment shader.  The vectors contained in these variables are interpolated from those same vectors at the vertices.  Hence, they are not necessarily orthonormal or even normalized.  To recover an orthonomal frame (\(\mathbf{t}\), \(\mathbf{b}\), \(\mathbf{n}\)), we suggest that you:
       <ol>
         <li>Normalize the <tt>geom_normal</tt> variable to get the normal vector \(\mathbf{n}\).</li>
         <li>Project <tt>geom_tangent</tt> to the plane perpendicular to \(\mathbf{n}\) and then normalize it to get \(\mathbf{t}\).</li>
@@ -174,7 +174,7 @@ You can pick your favorite language to do the calculations. Please submit a file
         so that it renders the bloom effect when enabled.
       </p>
 
-      <p>The bloom is a visual effect that aims to simulate the phenomenon in which imperfections in the optics of the eye (or of camera lenses) produces halos of light around bright objects.  A nice model for this effect is described by <a href="http://dx.doi.org/10.1145/218380.218466">Spencer et al.</a>; essentially it causes the image you see to be convolved with a filter that is very sharp at the center but has long, very faint tails.</p>
+      <p>The bloom is a visual effect that aims to simulate the phenomenon in which imperfections in the optics of the eye (or of camera lenses) produce halos of light around bright objects.  A nice model for this effect is described by <a href="http://dx.doi.org/10.1145/218380.218466">Spencer et al.</a>; essentially it causes the image you see to be convolved with a filter that is very sharp at the center but has long, very faint tails.</p>
       <table align="center">
         <tr><td align="center"><img src="images/a2/glare-model.png" width="400"></td></tr>
       </table>
@@ -263,7 +263,7 @@ You can pick your favorite language to do the calculations. Please submit a file
 
       <p>The problem with this approach is that it is really slow. Depending on your setup, it may grind your program to a halt, or your graphics card might just give up. The issue is that the large blur operations need to access too many pixels of the source image in each pass. A good way to speed up large blurs is to shrink the image, blur it, and then enlarge it back to size.  If you resample the image so that is is smaller by a factor \(\alpha\), then apply a Gaussian of width \(\alpha\sigma\), then resample back to the original size, the result will be quite a good approximation of blurring the full image by a Gaussian of width \(\sigma\), as long as \(\alpha\sigma\) does not get too small.  (We recommend keeping this effective standard deviation above 4 pixels.)</p>
 
-      <p>We recommend doing this by taking advantage of the machinery already available to you as part of the graphics pipeline. In particular, mipmaps are an effective way of shrinking an image down to scales that are appropriate to blur efficiently; furthermore, you can use built-in sampling texture sampling filters to resample blurred images to return them to their original size. The process for this is explained below:</p>
+      <p>We recommend doing this by taking advantage of the machinery already available to you as part of the graphics pipeline. In particular, mipmaps are an effective way of shrinking an image down to scales that are appropriate to blur efficiently; furthermore, you can use built-in texture sampling machinery to resample blurred images to return them to their original size. The process for this is explained below:</p>
       <ul>
         <li>Take the target texture of the sun scene pass and generate a mipmap of it (look in <tt>GLWrap::GLTexture2D</tt> for a helpful function here.)</li>
         <li>Calculate the levels of the mipmap which require blurring; these should be based on the Gaussian standard deviations and the maximum blur window.</li>
