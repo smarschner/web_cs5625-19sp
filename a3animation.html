@@ -1,0 +1,33 @@
+<script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+<p><strong>Due: Thursday Mar 19 2019 (11:59pm).</strong> Work on your own or in groups of 2, as you prefer. This assignment has a written task and 5 programming tasks.</p>
+
+<h2>Written Task</h2>
+
+<h4>A. </h4>
+<p> 1). A quaternion $q = q_0 + q_1 \mathbf{i} +q_2 \mathbf{j} + q_3 \mathbf{k} $ can also be written as $q = q_0 + \bf{q}$, where the scalar $q_0$ denotes real part and the vector $\mathbf{q}$ denotes the imaginary part. When $q_0=0$, we call it a pure quaternion. The multiplication of two pure quaternaions follows the rule:
+    $$\mathbf{v}\mathbf{w} = -\mathbf{v}\cdot \mathbf{w}+ \mathbf{v}\times\mathbf{w}$$
+    Show the above rule by writing out each quaternion explicitly using 1, $\mathbf{i}$, $\mathbf{j}$, $\mathbf{k}$ units.</p>
+
+<p>2). Show the following identity:
+    $$\mathbf{v}\mathbf{w}\mathbf{v} = \mathbf{w}(\mathbf{v}\cdot\mathbf{v}) - 2\mathbf{v}(\mathbf{v}\cdot\mathbf{w})$$
+</p>
+
+<h4>B. </h4>
+<p>A quaternion $q = q_0 + \mathbf{q}$ is a unit quaternion when its norm is one, i.e. 
+$$||q||^2 = q_0^2 + ||\mathbf{q}||^2 = 1$$ 
+Given a unit quaternion $q = q_0 + \mathbf{q}$, there exists a unique $\psi\in [0, \pi]$ such that $\cos(\psi) = q_0$ and $\sin(\psi) = ||\mathbf{q}||$. So a unit quaternion can be written using this angle $\psi$ and a unit vector $\mathbf{u} = \frac{\mathbf{q}}{||\mathbf{q}||}$:
+$$q = \cos(\psi) + \sin(\psi)\mathbf{u}$$
+Let $q^*$ denote the conjugate of $q$. Define an operator on a 3D vector $\mathbf{v}$:
+$$L_q(\mathbf{v}) = q\mathbf{v}q^*$$
+For a unit quaternion $q = \cos(\psi) + \sin(\psi)\mathbf{u}$ and any 3D vector $v$, show that the operator $L_q(\mathbf{v})$ acts as a rotation of the vector $\mathbf{v}$ around the axis $\mathbf{u}$ with angle $2\psi$.
+<p>Hints:</p>
+    1. We've proven in class the Rodrigues' rotation formula. The rotation of a 3D vector $\mathbf{v}$ with angle $\theta$ around an axis defined by the unit vector $\mathbf{u}$ results in the rotated vector $\mathbf{v}_{rot}$:
+    $$\mathbf{v}_{rot} = \mathbf{v}\cos(\theta) + (\mathbf{u}\times\mathbf{v})\sin(\theta) + \mathbf{u}(\mathbf{u}\cdot \mathbf{v})(1-\cos(\theta))$$
+<p> 2. The identities from part A might be useful.</p>
+3. Recall double angle trigonometric formulas:
+    $$\cos(2\theta) = \cos^2(\theta) - \sin^2(\theta) = 1-2\sin^2(\theta)$$
+    $$\sin(2\theta) = 2\sin(\theta)\cos(\theta)$$
+</p>
