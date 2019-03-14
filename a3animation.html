@@ -39,58 +39,44 @@ For a unit quaternion $q = \cos(\psi) + \sin(\psi)\mathbf{u}$ and any 3D vector 
       <p>In this programming assignment, you will implement:
         <ol>
           <li>blend shapes for facial expressions, and</li>
-          <li>linear blend skinning for articulated character animations.</li>
+          <li>linear blend skinning for articulated animations.</li>
         </ol>
       </p>
     
       <h2 id="task7">Task 1: Blend shapes</h2>
 
-      <p>Run the <a href="../student/src/pa2/PA2_BlendShapes.java">pa2.PA2_BlendShapes</a> class, and you will see that the program allows you to change between three characters:      
-      </p>
+      <p>Run the <tt>Morph</tt> target, and you will see a mesh of a face:</p>
 
-      <table class="table table-bordered">
-        <tr>
-          <td align="center" valign="center"><a href="images/pa2/kaito.png"><img src="images/pa2/kaito.png" width="200" /></a></td>
-          <td align="center" valign="center"><a href="images/pa2/miku.png"><img src="images/pa2/miku.png" width="200" /></a></td>
-          <td align="center" valign="center"><a href="images/pa2/uta.png"><img src="images/pa2/uta.png" width="200" /></a></td>
-        </tr>
-        <tr>
-          <td align="center">KAITO</td>
-          <td align="center">Hatsune Miku</td>
-          <td align="center">Utane Uta</td>
-        </tr>
-      </table>
+      <p>This face has a set of blend shapes, or as we will call them in this assignment, "morphs," associated with it.  A morph in this assignment modifies some facial features of the character; for example, making them wink.  The available morphs are listed in the control panel.  Each morph also has an associated "weight," which is a floating point number from 0 to 1.  You can set this value using the slider next to each morph name.</p>
 
-      <p>Each charcter has a set of blend shapes or, as we shall call it in this assignment, "morphs," associated with it.  A morph in this assigment modifies some facial features of the character, making him/her wink, for example.  A specific morph can be selected by the combo box next in the bottom row.  Each morph also has an associated "weight," which is a floating point number from 0 to 1.  You can set this value using the spinner and the slider in the bottom row.</p>
+      <p>The basics of blend shapes were discussed in the animation <a href="http://www.cs.cornell.edu/Courses/cs5625/2019sp/lectures/07mesh-animation.pdf">lecture</a>.  The idea is that each vertex comes with a 3D position for each of $N$ morphs, and the final mesh geometry is controlled by weights $w_j$ for each blend shape, which sum to $1$.  If  $\mathbf{p}_{ij}$ is the position of vertex $i$ in morph $j$, and $w_j$ is the weight of morph $j$, then the position of vertex $i$ is $$\mathbf{p}_i' = \sum_j w_j\mathbf{p}_{ij}$$</p>
 
-      <p>The basics of blend shapes were discussed in the animation <a href="http://www.cs.cornell.edu/Courses/cs5625/2014fa/lectures/07mesh-animation.pdf">lecture</a>.  The idea is that each vertex comes with a 3D position for each of $N$ blend shapes, and the animation is controlled by per-frame weights $w_j$ for each blend shape, which sum to $1$.  If  $\mathbf{p}_{ij}$ is the position of vertex $i$ in blend shape $j$, and $w_j$ is the weight of blend shape $j$ in the current frame, then the position of vertex $i$ is $$\mathbf{p}_i' = \sum_j w_j\mathbf{p}_{ij}.$$</p>
-
-      <p>Because the blend shapes are the same over most of the character, in this assignment the blend shapes are stored as <i>displacements</i> from a neutral pose; that is
+      <p>To simplify things slightly, in this assignment the blend shapes are stored as <i>displacements</i> from a neutral pose; that is
         $$\mathbf{p}_{ij} = \mathbf{p}_i + \mathbf{d}_{ij}$$
       so that the blended position is 
-      $$\mathbf{p}_i' = \mathbf{p}_i + \sum_j w_j\mathbf{d}_{ij}.$$ 
-      Since the neutral shape has all displacements zero, it can be left out, and the weights no longer have to sum to $1$.</p>
+      $$\mathbf{p}_i' = \mathbf{p}_i + \sum_j w_j\mathbf{d}_{ij}$$ 
+      where $\mathbf{p}_i$ is the undeformed vertex position. Now the weights no longer have to sum to $1$.</p>
 
-      <p>These displacements are zero for most vertices in each blend shape, so for each blend shape $j$ the intput file contains a list of the indices $i$ that have nonzero displacements, with values of $\mathbf{d}_{ij}$ just for those vertices.  The data is stored in the scene inpur files like <tt>???</tt>, and is read by our asset importing library along with the mesh geometry. To keep the vertex processing phase fast, from this basic data we  construct a list of the blend shapes that affect a particular vertex, so that we can process only those displacements in the vertex shader.  The code to read these files and store the data in textures is provided.  All this leads to a great decrease in storage and computation, at the cost of somewhat more complex indexing.  </p>      
+      <p>Note that as we change the position of each mesh vertex, the normals are no longer valid. We can recompute the normals for each of our morphs, but we must still transition between them smoothly as we move our vertices continuously. For this assignment, we use the following approximation: if $\mathbf{n}_{ij}$ is the normal of vertex $i$ in morph $j$, and $w_j$ is the weight of morph $j$, then we compute the normal as $$\mathbf{n}_i' = normalize(\mathbf{n}_i + \sum_jw_j(\mathbf{n}_{ij} - \mathbf{n}_i))$$ where $\mathbf{n}_{i}$ is our undeformed normal. This ensures that, if one morph weight is $1$ and all others are $0$, then we recover the correct normal.</p>
 
       <p>For this task, edit:
         <ul>
-          <li><a href="../student/src/shaders/forward/skeletal_mesh.vert">student/src/shaders/forward/skeletal_mesh.vert</a></li>
+          <li><tt>resources/Morph/shaders/morph_mesh.vert</tt></li>
         </ul>
         so that the shader implements morphing of vertices.
       </p>
 
-      <p>Information about morphs come to the shader in pieces of three data structures.
+      <p>The displacements and normals for each morph are read by our asset importing library along with the mesh geometry. Information about morphs are sent to the shader in three data structures:
         <ul>
-          <li>The first is the <tt>vert_morphWeights</tt> uniform array.  This is an array of length equal to the number of morphs in which the $j$th entry contains the weight of the $j$th morph.  You can use the <tt>getMorphWeight</tt> function to fetch the weight of the morph with a given index (which starts from 0).</li>  (srm: might not need this)
-          <li>The second is the <tt>vert_morphDisplacements</tt> texture.  You can think of this as an array containing displcements to individual vertices from all the morphs, sorted by the vertex index.  (It will become apparent soon why we sort it this way.)  You can recover the $i$th entry of the array using the <tt>getMorphDisplacementInfo(int i)</tt> function.  The function returns a <tt>vec4</tt> whose x-, y-, and z-components denote the displacement being applied to the vertex position.  The w-component stores the index of the morph having this displacement.</li>
-          <li>The third is the vertex data.  (srm: need to update) 
+          <li>The first is the <tt>vert_morphWeights</tt> uniform array. This is an array of length equal to the number of morphs in which the $j$th entry contains the weight of the $j$th morph.</li>
+          <li>The second is the <tt>vert_morphDisplacements</tt> texture. You can think of this as an array containing displacements of individual vertices from all the morphs. Each column corresponds to a vertex in the mesh, and each row corresponds to a morph. It is a floating point texture, so each texel's RGB value directly encodes the vertex position displacement.</li>
+          <li>The third is the <tt>vert_morphNormals</tt> texture, which encodes the normal for each vertex at each morph. Its layout is the same as above; each texel's RBG value directly encodes the vertex normal.</li>
         </ul>
       </p>
 
-      <p>(srm: need to update this) Let $n$ denote the value of <tt>vert_morphCount</tt>.  To compute a morphed vertex position, write a loop that starts fetching the <tt>vert_morphDisplacements</tt> array at indices <tt>vert_morphStart</tt>, <tt>vert_morphStart</tt>+1, <tt>vert_morphStart</tt>+2, $\dotsc$, <tt>vert_morphStart</tt>+$n$-1.  Each of these texture fetching will give you information about the largest displacement that you can apply to the vertex and the index of the associated morph.  Now, with the index of the morph at hand, you can find the weight of the morph from the <tt>vert_morphWeights</tt> texture.  Once you know the weight, scale the displacement by the it and add the resulting weighted displacement to the vertex position.  (For morphing, you only change the vertex position and do not have to care about the normal, the tangent, or the bitangent.)</p>
+      <p>To index into the textures above, you will need the index of each vertex within the shader; this is available through <tt>gl_VertexID</tt>, which is a built-in variable in GLSL. Note that we have encoded a constant maximum number of morphs available, but <tt>vert_numMorphs</tt> encodes the number of morphs that are currently active; you can ignore morphs with an index equal to or greater than this value.</p>
 
-      <p>A correct implementation of the shader should yield the following images</p>
+      <p>A correct implementation of the shader should yield the following images:</p>
 
       <table class="table table-bordered">
         <tr>
@@ -120,66 +106,78 @@ For a unit quaternion $q = \cos(\psi) + \sin(\psi)\mathbf{u}$ and any 3D vector 
       </table>
 
 
-      <h2 id="task8">Task 2: Linear blend skinning</h2>
+      <h2 id="task8">Task 2: Linear Blend Skinning</h2>
 
       <p>The second part of a standard character animation system is linear blend skinning, a technique that allows vertices of a mesh to deform according to an underlying skeleton. Linear blend skinning is discussed in the same lecture referenced above.  The basic idea is that the pose of an animated character is specified by using per-frame linear transformations (usually rigid) for each of a set of <i>bones</i> in the skeleton, and the deformed positions of the mesh (the "skin") are computed by applying a combination of the bone transformations to the neutral vertex position.  The influence of bone $j$ on vertex $i$ is given by a fixed (not per-frame) weight $w_{ij}$, so the deformed position is:
         $$\mathbf{p}_i' = \sum_j w_{ij} M_j \mathbf{p}_i$$
-      where $\mathbf{p}_i$ is the undeformed vertex position. Since each vertex is normally influenced by only a few bones, in this assignment we store the weights for a vertex $i$ by keeping a list of the bone indices $j$ for which the weights $w_{ij}$ are nonzero, togther with the values of those weights.  Each vertex is only allowed to be influenced by up to four bones, so we store exactly four indices for each vertex, using the value $-1$ to indicate an unused index.
+      where $\mathbf{p}_i$ is the undeformed vertex position. Since each vertex is normally influenced by only a few bones, in this assignment we store the weights for a vertex $i$ by keeping a list of the bone indices $j$ for which the weights $w_{ij}$ are nonzero, together with the values of those weights.  Each vertex is only allowed to be influenced by up to four bones, so we store exactly four indices for each vertex, using the value $-1$ to indicate an unused index.
 
-      <p>With the math set up this way, there are several pieces of data required to animate a mesh.  First, the animation rig consists of a skeleton and corresponding weights.  The weights are stored in vertex attributes on the mesh: one integer 4-vector containing the active bone indices for the vertex an one floating-point 4-vector giving the weights.  The skeleton is associated with a hierarchy of scene nodes corresponding to the bones, together with a list of the bones that establishes their order for referring to them by indices.  Finally, the skeleton's scene nodes are animated using keyframed transformations; these transformations define the bone transformations for each fram.  See for example the single-frame animation in <tt>???</tt>.  (srm: seems good to provide one or two test inputs that have no motion, for testing, if it is easy to do so)
+      <p>There are several pieces of data required to animate a mesh.  First, the animation rig consists of a skeleton and corresponding weights.  The weights are stored in vertex attributes on the mesh: one integer 4-vector containing the active bone indices for the vertex an one floating-point 4-vector giving the weights.  The skeleton is associated with a hierarchy of scene nodes corresponding to the bones, together with a list of the bones that establishes their order for referring to them by indices.  Finally, the skeleton's scene nodes are animated using keyframed transformations; these transformations define the bone transformations for each frame.  See for example the single-frame animation in <tt>???</tt>.  (srm: seems good to provide one or two test inputs that have no motion, for testing, if it is easy to do so)
 
       <p>For this task, you'll need to:
         <ul>
-          <li>edit <a href="../student/src/shaders/forward/skeletal_mesh.vert">student/src/shaders/forward/skeletal_mesh.vert</a>, and</li>
-          <li>write the C++ code that supplies the transformation data to this shader.</li>
+          <li>edit <tt>resources/Animation/shaders/skeletal_mesh.vert</tt> to implement linear blend skinning on the GPU, and</li>
+          <li>write the C++ code in <tt>Animation/AnimationApp.cpp</tt>, <tt>Common/Scene.hpp</tt>, and <tt>Common/Scene.cpp</tt> that supplies the transformation data to this shader.</li>
         </ul>
       </p>
+
+      <h3>Implementation Steps</h3>
 
       <p>The framework as distributed loads the rigging and animation data into several classes where you can use it to compute the per-frame bone transformations required for the vertex shader.
       <ul>
       	<li>The <tt>Skeleton</tt> class (defined in <tt>Common/Scene.hpp</tt>) contains a list of <tt>Bone</tt> objects, in order of bone index, and a pointer to the root node of the skeleton's hierarchy in the scene.</li>
-      	<li><tt>Bone</tt> objects are <tt>SceneObject</tt>s, so they are associated with nodes in the scene.  Each bone stores (the inverse of) it <i>bind pose matrix</i>, which is the transformation of that node relative to the skeleton's root when the skeleton is undeformed (that is, it's in the pose that matches the shape of the undeformed mesh).</li>
-      	<li>The scene can contain an <tt>Animation</tt>, which stores a <tt>NodeAnim</tt> object for each animated node.</li>
-      	<li>A <tt>NodeAnim</tt> object contains collections of keyframes for the object's rotation, translation, and scale.
+      	<li><tt>Bone</tt> objects inherit from the <tt>SceneObject</tt> class, so they are associated with nodes in the scene.  Each bone stores (the inverse of) its <i>bind pose matrix</i>, which is the transformation of that node relative to the skeleton's root when the skeleton is undeformed (that is, it's in the pose that matches the shape of the undeformed mesh).</li>
+      	<li>The scene can contain a number of <tt>Animation</tt>s, which store <tt>NodeAnim</tt> objects for each animated node. For this assignment, we will only consider the first Animation within a scene.</li>
+      	<li>A <tt>NodeAnim</tt> object contains collections of keyframes for a corresponding <tt>Node</tt>'s translation, rotation, and scale. These are stored in associative maps called <tt>mTranslationKeys</tt>, <tt>mRotationKeys</tt>, and <tt>mScalingKeys</tt> respectively.
       </ul>
 
-      [Eston -- I'm thinking maybe leaving in the interpolation code is fine, since writing it is the same task as in 4620 and describing exactly what the meaning of the keyframe data is a little complicated.]
-
-      <p>With all these objects available, the computation of the bone transformations for a given frame goes like this:
+      <p>With all these objects available, the bone transformations for a given frame are computed as follows:
       	<ol>
-      		<li>For each bone in the skeleton, get the transformation from its node to the root of the skeleton at time $t$.</li>
-      		<li>Multiply this transformation by the inverse of the bind pose matrix to obtain the bone transformation (the transformation that carries the bind-pose bone to the current-frame bone).</li>
+      		<li>For each bone in the skeleton, get the transformation from its node to the root of the skeleton at time $t$. You might find it helpful to write a recursive helper function to do this. For each recursive call, you should compute the transformation of a particular node at time $t$ by separately linearly interpolating the translation, rotation, and scaling transformations found in the corresponding <tt>NodeAnim</tt> and composing them in $TRS$ order. <tt>NodeAnim</tt> contains a helper <tt>linearInterpolate()</tt> function for this purpose. You may also find <a href="https://eigen.tuxfamily.org/dox/group__TutorialGeometry.html">Eigen's transformation tools</a> (in particular, <tt>Affine3f</tt>) are useful here.</li>
+      		<li>Multiply this transformation by the inverse of the bind pose matrix to obtain the bone transformation (the transformation that carries the bind-pose bone to the current-frame bone). This is accessible through the <tt>Bone::getInvBindMatrix()</tt> method.</li>
       		<li>Put this matrix in the corresponding entry of the <tt>vert_boneXforms</tt> uniform array (see below for how to do this without making a lot of OpenGL calls).</li>
       	</ol>
-	Finally, the vertex shader will use these matrices, along with the weights stored in the mesh attributes, in the equation above to compute deformed vertex positions.
+      Finally, the vertex shader will use these matrices, along with the weights stored in the mesh attributes, in the equation above to compute deformed vertex positions.</p>
 
-      <p>We now discuss further the computation of the matrices for linear blend skinning.  Let:
+      <h3>Transformation Details</h3>
+
+      <p>We now discuss further the computation of the matrices for linear blend skinning. Let us say that we are interested in Bone $i_k$, which is a child of Bone $i_{k-1}$, which in turn is a child of Bone $i_{k-2}$, and so on until we reach Bone $i_0$ which does not have a parent. Let:
         <ul>
-          <li>$T_i^{\mathrm{R}}$ denote the 4x4 translation matrix associated with the displacement of Bone $i$ to its parent in rest position.</li>
-          <li>$T_i^{\mathrm{P}}$ denote the 4x4 translation matrix associated with the displacement stored in the $i$th element of <tt>boneDisplacements</tt>.</li>
-          <li>$R_i^{\mathrm{P}}$ denote the 4x4 rotation matrix associated with the quaternion stored in the $i$th element of <tt>boneRotations</tt>.</li>
+          <li>$M^{\mathrm{R}}_{i_k}}$ denote the 4x4 transformation matrix associated with the displacement of Bone $i_k$ to its root in rest position (i.e., the bind-pose matrix).</li>
+          <li>$T_{i_k}^{\mathrm{P}}$ denote the 4x4 translation matrix associated with the translation of Bone $i_k$ with respect to its parent at a particular time.</li>
+          <li>$R_{i_k}^{\mathrm{P}}$ denote the 4x4 rotation matrix associated with the quaternion of Bone $i_k$ with respect to its parent at a particular time.</li>
+          <li>$S_{i_k}^{\mathrm{P}}$ denote the 4x4 scaling matrix associated with the scale of Bone $i_k$ with respect to its parent at a particular time.</li>
         </ul>
-      Now, let us say that we are interested in Bone $i_k$, which is a child of Bone $i_{k-1}$, which in turn is a child of Bone $i_{k-2}$, and so on until we reach bone $i_0$ which does not have a parent.  The matrix for linear blend skinning can be computed in two steps:
-        <ol>
-          <li>First, compute the 4x4 transformation matrix associated with the translation from the origin to the world position of Bone $i_k$ in <i>rest position</i>.  This matrix is given by:
-            $$M^{\mathrm{R}}_{i_k} = T^{\mathrm{R}}_{i_0} T^{\mathrm{R}}_{i_1} T^{\mathrm{R}}_{i_2} \dotsm T^{\mathrm{R}}_{i_{k-1}} T^{\mathrm{R}}_{i_k}.$$ 
-          </li>
-          <li>Second, compute the 4x4 transformation matrix associated with going from the origin to the world position of Bone $i_k$ according to the <i>pose</i>.  This matrix is given by:
-            $$ M^{\mathrm{P}}_{i_k} = ( T^{\mathrm{R}}_{i_0} T^{\mathrm{P}}_{i_0} R^{\mathrm{P}}_{i_0} ) ( T^{\mathrm{R}}_{i_1} T^{\mathrm{P}}_{i_1} R^{\mathrm{P}}_{i_1} ) \dotsm ( T^{\mathrm{R}}_{i_{k-1}} T_{i_{k-1}}^{\mathrm{P}} R_{i_{k-1}}^{\mathrm{P}} ) ( T^{\mathrm{R}}_{i_k} T_{i_k}^{\mathrm{P}} R_{i_k}^{\mathrm{P}} ). $$
-          </li>
-          <li>The bone matrix for linear blend skinning is then given by:
-            $$ M_{i_k} = M^{\mathrm{P}}_{i_k} ( M^{\mathrm{R}}_{i_k} )^{-1}. $$
-          </li>
-        </ol>
+      Then the transformation from the rest pose to to object space (i.e., the transformation a particular Bone applies to its associated vertices) is:
+       $$ M_{i_k} = ( T^{\mathrm{P}}_{i_0} R^{\mathrm{P}}_{i_0} S^{\mathrm{P}}_{i_0} ) ( T^{\mathrm{P}}_{i_1} R^{\mathrm{P}}_{i_1} S^{\mathrm{P}}_{i_1} ) \dotsm ( T^{\mathrm{P}}_{i_{k-1}} R^{\mathrm{P}}_{i_{k-1}} S^{\mathrm{P}}_{i_{k-1}} ) ( T^{\mathrm{P}}_{i_k} R^{\mathrm{P}}_{i_k} S^{\mathrm{P}}_{i_k} ) ( M^{\mathrm{R}}_{i_k} )^{-1}. $$
       </p>
 
-      <p>To perform linear blend skinning, we first morph the vertex according to the blend shapes as was done in the last task.  Let us denote the morphed vertex position by $\mathbf{p}$.  The vertex can be influenced by a number of bones, and each of this bone has different amount of influence on the vertex, indicated by the bone's <i>weight</i>.  The indices of the bones that influence the vertex is stored in the <tt>vert_boneIndices</tt> attributes, a <tt>vec4</tt>, meaning that there can be at most four bones that can influence the vertex.  You can retrieve the index of the $j$th bone with the expression <tt>vert_boneIndices[j]</tt> where $j$ ranges from 0 to 3.  Some of these indices may be -1, indicating that this is not a valid bone and should be ignored.  The weights of the bones are stored in the attribute <tt>vert_boneWeights</tt>, and the weight of the $j$th bone can be retrieved by the expression <tt>vert_boneWeights[j]</tt>.  Now, suppose that the indices of the bones are $j_0$, $j_1$, $j_2$, and $j_3$, and the associated weights are $w_{j_0}$, $w_{j_1}$, $w_{j_2}$, and $w_{j_3}$.  Then, the linear blended vertex position is given by:
-        $$ \mbox{blended vertex position} = w_{j_0} M_{j_0} p + w_{j_1} M_{j_1} p + w_{j_2} M_{j_2} p + w_{j_3} M_{j_3} p.$$
-      Now, you also have to compute the blended tangent, bitangent, and normal.  We suggest that you compute the tangent and bitangent using the formula similar to the above.  Then, you can compute the normal by computing the cross product between the two vectors.</p>
+      <p>Let us denote the undeformed vertex position by $\mathbf{p}$.  The vertex can be influenced by a number of bones, and each of this bone has different amount of influence on the vertex, indicated by the bone's <i>weight</i>.  The indices of the bones that influence the vertex is stored in the <tt>vert_boneIndices</tt> attributes, a <tt>vec4</tt>, meaning that there can be at most four bones that can influence the vertex.  You can retrieve the index of the $j$th bone with the expression <tt>vert_boneIndices[j]</tt> where $j$ ranges from 0 to 3.  Some of these indices may be -1, indicating that this is not a valid bone and should be ignored.  The weights of the bones are stored in the attribute <tt>vert_boneWeights</tt>, and the weight of the $j$th bone can be retrieved by the expression <tt>vert_boneWeights[j]</tt>.  Now, suppose that the indices of the bones are $j_0$, $j_1$, $j_2$, and $j_3$, and the associated weights are $w_{j_0}$, $w_{j_1}$, $w_{j_2}$, and $w_{j_3}$.  Then, the linear blended vertex position is given by:
+        $$ \mbox{blended vertex position} = w_{j_0} M_{j_0} \mathbf{p} + w_{j_1} M_{j_1} \mathbf{p} + w_{j_2} M_{j_2} \mathbf{p} + w_{j_3} M_{j_3} \mathbf{p}.$$
+      You also have to compute the blended tangent, bitangent, and normal.  We suggest that you compute the tangent and bitangent using a formula similar to the above, reorthogonalizing as necessary.  Then, you can compute the normal by computing the cross product between the two vectors. Note that the input frame could be either left-handed or right-handed; you should preserve its handedness through this deformation.</p>
 
       <p>Lastly, note that the positions and tangent frame you computed in the last paragraph are in <i>object space</i>.  You have to transform them with the appropriate matrices to pass them to the fragment shaders and the rasterization unit.  However, the code to do this has already been provided for you in the shader.</p>
 
-      <p>You can test the full implementation of the character animation system by running the <a href="../student/src/pa2/PA2_Animations.java">pa2.PA2_Animations</a> class.  Here, you still have the option of selecting among the three characters, but you can also subject them to 5 poses/animations.  A correct implementation of the system should produce the following images:
+      <h3>OpenGL Uniform Buffer Objects</h3>
+
+      <p>It is common for shaders to have large groups of uniforms that need to be set every time a shading program is used. for instance, in this vertex shader, the <tt>vert_boneXforms</tt> array needs to be updated each frame. In other cases, we may have uniforms that are the same between programs, and we might like to upload them only once. OpenGL provides <a href="https://www.khronos.org/opengl/wiki/Uniform_Buffer_Object"><i>uniform buffer objects</i></a> that allow sets of uniforms to read from a buffer on the GPU. To use this feature, we create a uniform buffer object, collect an array of uniform data in our C++ code, send the data to the GPU, and then notify the shading program that the block of uniforms are set from the uniform buffer object we created. On the GLSL side we can define a uniform block in the following way:
+<pre><code>
+uniform UniformBlock {
+  vec4 member1;
+  int member2;
+  mat4 member3;
+  ...
+};
+</code></pre>
+      Any of the usual GLSL types, including arrays, can be included in a uniform block. On the C++ side, we can refer to the entire block of data by its name, in this case <tt>UniformBlock</tt>. In the shader, we can refer to <tt>member1</tt>, <tt>member2</tt>, etc. as we would any other uniform.</p>
+
+      <p>We provide a wrapper for uniform buffer objects: the class <tt>GLWrap::GLUniformBuffer</tt>. Similar to other classes in the <tt>GLWrap</tt> library, it creates the uniform buffer on the GPU when a class instance is created, and cleans up resources when it is deleted. You can bind it to a particular buffer on the GPU (specified by an integer index) using <tt>bind()</tt>, send data to the buffer using the <tt>update()</tt> method, and tie it to a shader's uniform block by passing it to the usual <tt>setUniform()</tt> method. For an example of how it is used, see how lighting data is sent to the GPU in the <tt>setLightUniforms()</tt> method in <tt>Common/SceneApp.cpp</tt>. Note that buffer 0 is used for lighting uniforms; don't overwrite it when uploading bone transform data. (Doing so could cause your entire operating system to crash!)</p>
+
+      <p>Because of the way memory is handled on the GPU, padding bytes may be added between members of the uniform block, and this must be accounted for when preparing data to transfer to the uniform buffer object in C++ code. There exist methods to query the byte offsets of members in the block, but there is also a standard (called std140) that specifies how much padding is added to each member given a particular uniform block. To make data layout easier, we provide a class called <tt>nanogui::UniformBufferStd140</tt> which takes care of the padding for you. It acts like <tt>std::vector</tt>, meaning you can append data to it using the <tt>push_back()</tt> method. When updating the <tt>GLUniformBuffer</tt>, simply create an instance of <tt>UniformBufferStd140</tt>, call <tt>push_back()</tt> with the data you would like to upload, bind the <tt>GLUniformBuffer</tt>, and then call <tt>update()</tt> on it passing the <tt>UniformBufferStd140</tt> as an argument.</p>
+
+      <h3>Results</h3>
+
+      <p>You can test the full implementation of the character animation system by running the <tt>Animation</tt> target. A correct implementation of the system should produce the following images:
       </p>      
 
       <table class="table table-bordered">
