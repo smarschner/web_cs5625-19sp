@@ -1,0 +1,80 @@
+<script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+\(\newcommand{\vx}{\mathbf{x}}\)
+\(\newcommand{\vp}{\mathbf{p}}\)
+\(\newcommand{\vf}{\mathbf{f}}\)
+\(\newcommand{\ve}{\mathbf{e}}\)
+\(\newcommand{\vv}{\mathbf{v}}\)
+\(\newcommand{\vC}{\mathbf{C}}\)
+\(\newcommand{\th}{^\text{th}}\)
+
+<p><strong>Due: ??? (11:59pm).</strong> Work on your own or in groups of 2, as you prefer.</p>
+
+<p>
+  In this system you will adapt a simple particle system that uses forward Euler's method as its integrator to use two fancier methods: symplectic Euler (this is a really small change) and Position Based Dynamics (this is more involved).  You may want to start by familiarizing yourself with "Differential Equation Basics" and "Particle Dynamics" in Baraff and Witkin's course notes, and with M&uuml;ller et al. 2006 &ldquo;Position Based Dynamics&rdquo;, both linked from the schedule above.
+
+<h2>Introduction</h2>
+
+<p>
+  Both position-based and Newtonian simulations for interactive applications often use particle systems: objects (even things like cloth, ropes, deformable solids, or even fluids) are represented as collections of point masses that interact with one another to produce the behaviors of the overall system.  The position-based approach differs from the traditional Newtonian approach in how it represents these interactions that hold objects together.  In the more familiar Newtonian model used by the starter code, particles exert forces on one another and their motion is entirely described by a second-order differential equation.  In the position-based approach, the particles do not exert forces on one another but instead are affected by soft constraints: functions of the particle positions that are zero in the same configurations where the forces in the Newtonian system would be zero.
+</p>
+<p>
+  To represent the same interactions in the two formulations, we start with constraint functions and take two paths: for the Newtonian system, define an energy and then differentiate the energy to obtian a force; for the position-based system, differentiate the constraint itself and derive a constraint projection equation that can be used to approximately satisfy constraints.
+</p>
+<p>
+  Our simulator actually supports four types of influences on particles, which we generically call "forces" even though they are not always literally implemented with forces:
+  <ol>
+    <li>Gravity: a unary, constant force \(f = mg\) where \(f\) is the force (of gravity) on a particle, \(m\) is the particle's mass, and \(g\) is the acceleration of gravity.  It is always treated as a force, not a constraint.</li>
+    <li>Pin: a unary force that pulls a particle towards a fixed location.  Its constraint equation is \(C(\vp) = \|\vp - \vp_0\|^2\) where \(\vp\) is the position of the particle and \(\vp_0\) is a fixed position.</li>
+    <li>Stretching: a binary force that pushes a pair of particles towards a fixed separation distance.  Its constraint equation is \[
+      C(\vp_i, \vp_j) = \frac{\|\vp_i - \vp_j\|}{l} - 1,
+    \] where \(\vp_i\) and \(\vp_j\) are the positions of the two particles affected by the constraint and \(l\) is th rest length of the spring.</li>
+    <li>Bending: a ternary force that pushes three particles towards  collinear configurations.  Its constraint equation is \[
+      C(\vp_i, \vp_j, \vp_k) = \frac{\vp_j - \vp_i}{\|\vp_j - \vp_i\|} \cdot \frac{\vp_k - \vp_j}{\|\vp_k - \vp_j\|} - 1.
+    \]  The constraint function is based on the cosine of the angle between the two segments \(\vp_i\)&ndash;\(\vp_j\) and \(\vp_j\)&ndash;\(\vp_k\), and is zero when the cosine is 1&mdash;that is, when the two segments are collinear.</li>
+  </ol>
+  In this assignment we use the symbol \(\vp\), a 3-vector, to denote the 3D position of a point or particle, with a subscript index to distinguish different particles, and \(\vx\) to denote the overall position state of the system, which contains the values of \(\vp_i\) for \(i = 1\ldots n\), all stacked into a single \(3n\)-vector.  The symbol \(\nabla\) is a derivative with respect to \(\vx\), and derivatives with respect to other variables can be written in two ways: \[\nabla_\vp f(\vp, \ldots) = \frac{\partial f(\vp, \ldots)}{\partial \vp}.\]
+</p>
+<p>
+  To use these forces in a Newtonian system, we define energies that penalize deviation from the constraints, then differentiate those energies to produce forces.  In particular, if we have a constraint \(C(\vx)\), we define an energy \[E(\vx) = \frac{1}{2}k C(\vx)^2,\] where $k$ is a stiffness coefficient for this particular constraint, then define the force as \[\vf(\vx) = -\nabla E(\vx).\]  Since each constraint only depends on a few particles' positions, this notation expands to separate equations for the force on each particle participating in the constraint: \[\vf_i(\vp_1, \ldots, \vp_n) = -\nabla_{\vp_i} E(\vp_1, \ldots, \vp_n).\]
+</p>
+<p>
+  On the other hand, to use these forces in a position based dynamics system, we treat gravity and any other external forces in the conventional way, but after each time step we approximately solve the constraints by running a few steps of an iterative nonlinear system solver.  There are many approaches, but in this assignment we'll use the simple one proposed in the M&uuml;ller paper referenced above: consider constraints one at a time, for each one moving the system to the nearest state that solves a first-order approximation to that constraint.  In particular, if we have a constraint \(C(\vx) = 0\), we approximate the constraint by a first-order Taylor expansion:
+  \[
+  C(\vx + \Delta\vx) \approx C_1(\Delta\vx) = C(\vx_0) + \nabla C(\vx_0) \Delta\vx.
+  \]
+  The minimum solution to \(C_1(\Delta\vx) = 0\) is a multiple of the gradient \(\nabla C\):
+  \[
+  \Delta\vx = -\frac{C(\vx_0)}{\|\nabla C(\vx_0)\|^2}\nabla C(\vx_0).
+  \]
+  Since each constraint only depends on a few particles' positions, this notation expands to a separate projection rule for each particle participating in the constraint:
+  \[
+  \Delta\vp_i = -\frac{C(\vp_1, \ldots, \vp_n)}{\sum_j\|\nabla_{\vp_j} C(\vp_1, \ldots, \vp_n)\|^2}\nabla C(\vp_1, \ldots, \vp_n)
+  \]
+  where the \(\vp\)s in this case denote the current positions of the particles.
+</p>
+
+
+<h2>Written Part</h2>
+<p>
+  For the written part, we ask you to derive the formulas needed to implement the two methods for pin, stretching, and bending forces.  For each of these three forces, start from the constraint equations above and derive the equations required for implementation:
+  <ol>
+    <li>For each force write down the corresponding energy, and derive an expression for the force on each particle as a function of the position(s) of the particle(s) involved in the constraint.  Show how you obtained these equations, and verify they are equivalent to what is in the code for the Newtonian particle system.
+    </li>
+    <li>For each force compute the gradient of the constraint with respect to the particle position(s) and derive the constraint projection equations that you will use to implement position based dynamics in the programming part.  Show how you obtained these equations, and for the binary spring force verify they are equivalent to the equations given by M&uuml;ller et al.
+    </li>
+  </ol>
+  {\em Hint}: For the stretching force and especially the bending force, it is convenient to use the chain rule to compose the derivatives from the derivatives of the simpler functions \(\ve(\vp_a, \vp_b\) = \vp_b - \vp_a\) (the derivatives of this function are \(-I\) and \(I\) with respect to \(\vp_a\) and \(\vp_b\)) and \(n(\vv) = \vv / \|\vv\|\).
+</p>
+
+<h2>Programming Part</h2>
+
+      <h3 id="overview">Overview</h3>
+
+      <p>The code for this assignment is included in <a href="https://github.coecis.cornell.edu/cs5625/Spring19Framework">the class repository</a> as a new commit. As with previous assignments, you'll need to rerun CMake. This will create the <tt>Particles</tt> compilation targets. The framework programmatically builds one of several hard-coded scenes in the constructor of <tt>ParticlesApp</tt>, then integrates the system forward through time using one of three integrators.</p>
+    
+      <h3 id="what-to-submit">What to Submit</h3>
+
+      <p>You should submit a ZIP file containing all the source codes and data in the <tt>Particles</tt> directory.  All the code you have written should be well commented and easy to read, and header comments for all modified files should appropriately indicate authorship.  Be sure to cite sources for any code or formulas that came from anywhere other than your head or this assignment document.  Also, put in the directory a README file explaining any implementation choices you made or difficulties you encountered.</p>
