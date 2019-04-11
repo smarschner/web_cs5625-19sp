@@ -66,7 +66,7 @@
     <li>For each force compute the gradient of the constraint with respect to the particle position(s) and derive the constraint projection equations that you will use to implement position based dynamics in the programming part.  Show how you obtained these equations, and for the binary spring force verify they are equivalent to the equations given by M&uuml;ller et al.
     </li>
   </ol>
-  {\em Hint}: For the stretching force and especially the bending force, it is convenient to use the chain rule to compose the derivatives from the derivatives of the simpler functions \(\ve(\vp_a, \vp_b) = \vp_b - \vp_a\) (the derivatives of this function are \(-I\) and \(I\) with respect to \(\vp_a\) and \(\vp_b\)) and \(n(\vv) = \vv / \|\vv\|\).
+  <i>Hint</i>: For the stretching force and especially the bending force, it is convenient to use the chain rule to compose the derivatives from the derivatives of the simpler functions \(\ve(\vp_a, \vp_b) = \vp_b - \vp_a\) (the derivatives of this function are \(-I\) and \(I\) with respect to \(\vp_a\) and \(\vp_b\)) and \(n(\vv) = \vv / \|\vv\|\).
 </p>
 
 <h2>Programming Part</h2>
@@ -75,9 +75,50 @@
 
       <p>The code for this assignment is included in <a href="https://github.coecis.cornell.edu/cs5625/Spring19Framework">the class repository</a> as a new commit. As with previous assignments, you'll need to rerun CMake. This will create the <tt>Particles</tt> compilation targets. The framework programmatically builds one of several hard-coded scenes in the constructor of <tt>ParticlesApp</tt>, then integrates the system forward through time using one of three integrators.</p>
 
+      <p>Like the earlier assignments, the framework is built on the NanoGUI framework and makes heavy use of the Eigen template library for matrices and vectors.</p>
+
       <h3>What is Already There</h3>
 
-      <p>The framework ships with an already working implementation of a basic particle system with a Forward Euler integrator.  It supports </p>
+      <p>The framework ships with an already working implementation of a basic particle system with a Forward Euler integrator.  You'll find it has several small class hierarchies in the files <tt>ParticleSystem.hpp</tt>, <tt>ParticlesApp.hpp</tt>, <tt>ParticleRenderer.hpp</tt>, and their associated <tt>.cpp</tt> files.
+      <ul>
+        <li><tt>ParticleSystem.hpp</tt> contains the classes related to the particle system itself.
+          <ul>
+            <li><tt>ParticleSystem</tt>, which contains a collection of particles and a collection of forces that act on those particles, and provides simple methods to add and remove particles and forces and to pack/unpack the system state to/from Eigen vectors.</li>
+            <li><tt>Particle</tt>, a simple structure with mass, position, and velocity, which also contains an accumulator for adding the different forces affecting this particle, and an index that is used for gathering particles into vectors.</li>
+            <li><tt>Force</tt> and its subclasses, which represent particle interactions that can be treated as forces.  <tt>Force</tt> simply provides a virtual function to compute the force from the current system state and add the result to the force accumulators of the particles affected by the force.  Among the subclasses are the forces mentioned above, plus <tt>MouseForce</tt> which pulls a particle towards the ray defined by the mouse position, to allow simple user interaction with the simulation.</li>
+            <li><tt>Constraint</tt> and its subclasses, which represent particle interactions that can be treated as constraints.   In the framework the only Constraints are also Forces, meaning they can be treated as forces by the Newtonian integrators and as constraints by the position-based integrator.  You'll note the three forces that you worked with in the written part appear as subclasses of <tt>Constraint</tt>.  In the starter code, <tt>Constraint</tt> is only a marker for constraints, but you will want to add one or more virtual functions here, similar to the way <tt>Force</tt> works.</li>
+            <li><tt>Integrator</tt> and its subclasses, which represent different methods for evolving the particle system through time.  The framework contains the classes <tt>SympEulerIntegrator</tt> and <tt>PositionBasedIntegrator</tt> so that the UI code can refer to them, but their <tt>timestep</tt> methods are empty.
+          </ul>
+        </li>
+        <li><tt>ParticleRenderer.hpp</tt> contains classes concerning rendering, which you don't have to change but might like to in order to get nicer or more useful renderings.
+          <ul>
+            <li>An instance of <tt>Visual</tt> provides a visual representation of a collection of particles.  The two implemented are <tt>ParticleVisual</tt>, which draws particles as separated points, and <tt>RodVisual</tt>, which draws a list of particles as a chain of line segments.  Their implementations provide a simple example of the use of geometry shaders: the only thing these classes do is copy the particle positions to a buffer and draw it using <tt>GL_POINTS</tt> or <tt>GL_LINE_STRIP</tt>; the geometry shaders, found in <tt>resources/Particles/shaders/</tt>, expand these primitives into camera-facing quads.
+            <li><tt>ParticleRenderer</tt> just holds a collection of <tt>Visual</tt>s and a method to render them all.
+          </ul>
+        </li>
+        <li><tt>ParticlesApp.hpp</tt> contains the main class for the app, which inherits from <tt>nanogui::Screen</tt> where most of the app's machinery comes from.  Most of the code here concerns UI and event handling, but there are some class members that are useful to understanding the particle system.
+          <ul>
+            <li><tt>camera</tt> and <tt>cameraController</tt> are responsible for the view of the 3D scene.</li>
+            <li><tt>system</tt> and <tt>*Integrator</tt> instantiate objects from <tt>ParticleSystem</tt>, and <tt>context</tt> is used to communicate view and event information to the mouse force.</li>
+            <li><tt>renderer</tt> instantiates <tt>ParticleRenderer</tt> for drawing the system state in the window.</li>
+          </ul>
+        </li>
+      </ul> 
+
+      <h3>What to Add</h3>
+
+      <p>Your mission is to make the integrators <tt>SympEulerIntegrator</tt> and <tt>PositionBasedIntegrator</tt> function.  This translates roughly to the following steps:
+        <ol>
+          <li>Implement <tt>SympEulerIntegrator</tt> following the example of <tt>FwdEulerIntegrator</tt>.  This is pretty simple to do, since these two integrators have extremely similar implementations.  You should find, however, that the symplectic integrator is vastly better behaved.</li>
+          <li>Add to the interface of <tt>Constraint</tt>, following the example of <tt>Force</tt>, to provide the functionality needed by the position based integrator.  Implement this interface for all the <tt>Constraint</tt> subclasses.</li>
+          <li>Implement <tt>PositionBasedIntegrator::timestep</tt>, following the M&uuml;ller paper.   This implementation starts off following the symplectic Euler method, but differs in two ways.  First, forces that are also <tt>Constraint</tt>s are skipped in the force accumulation phase.  Then, after the symplectic Euler step, the forces that are <tt>Constraint</tt>s apply the constraint projection step to the particles they affect.  You should loop over the constraints <tt>numIterations</tt> times, then compute new velocities from the original (pre-Euler-step) and final (post-constraint-projection) positions.</li>
+        </ol>
+      </p>
+
+      <p>When you have the position-based integrator working, you should find that it can provide very stiff behavior for cloth or rods with larger timesteps and less overall work per frame (i.e. higher FPS reading) than is possible with the symplectic Euler method.</p>
+
+      <p><i>Hints</i>: You can use <tt>dynamic_cast</tt> to determine which forces can be treated as constraints in the position based integrator.  You can use the methods <tt>ParticleSystem.{get,set}{Positions,Velocities}</tt> to save the starting positions before you modify them in the Euler step, compute the velocities with an Eigen vector subtraction, and write the velocities back to the particles.
+
     
       <h3 id="what-to-submit">What to Submit</h3>
 
