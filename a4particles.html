@@ -66,7 +66,7 @@
     <li>For each force compute the gradient of the constraint with respect to the particle position(s) and derive the constraint projection equations that you will use to implement position based dynamics in the programming part.  Show how you obtained these equations, and for the binary spring force verify they are equivalent to the equations given by M&uuml;ller et al.
     </li>
   </ol>
-  {\em Hint}: For the stretching force and especially the bending force, it is convenient to use the chain rule to compose the derivatives from the derivatives of the simpler functions \(\ve(\vp_a, \vp_b\) = \vp_b - \vp_a\) (the derivatives of this function are \(-I\) and \(I\) with respect to \(\vp_a\) and \(\vp_b\)) and \(n(\vv) = \vv / \|\vv\|\).
+  {\em Hint}: For the stretching force and especially the bending force, it is convenient to use the chain rule to compose the derivatives from the derivatives of the simpler functions \(\ve(\vp_a, \vp_b) = \vp_b - \vp_a\) (the derivatives of this function are \(-I\) and \(I\) with respect to \(\vp_a\) and \(\vp_b\)) and \(n(\vv) = \vv / \|\vv\|\).
 </p>
 
 <h2>Programming Part</h2>
@@ -74,6 +74,10 @@
       <h3 id="overview">Overview</h3>
 
       <p>The code for this assignment is included in <a href="https://github.coecis.cornell.edu/cs5625/Spring19Framework">the class repository</a> as a new commit. As with previous assignments, you'll need to rerun CMake. This will create the <tt>Particles</tt> compilation targets. The framework programmatically builds one of several hard-coded scenes in the constructor of <tt>ParticlesApp</tt>, then integrates the system forward through time using one of three integrators.</p>
+
+      <h3>What is Already There</h3>
+
+      <p>The framework ships with an already working implementation of a basic particle system with a Forward Euler integrator.  It supports </p>
     
       <h3 id="what-to-submit">What to Submit</h3>
 
