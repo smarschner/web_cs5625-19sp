@@ -43,7 +43,7 @@
 <p>
   On the other hand, to use these forces in a position based dynamics system, we treat gravity and any other external forces in the conventional way, but after each time step we approximately solve the constraints by running a few steps of an iterative nonlinear system solver.  There are many approaches, but in this assignment we'll use the simple one proposed in the M&uuml;ller paper referenced above: consider constraints one at a time, for each one moving the system to the nearest state that solves a first-order approximation to that constraint.  In particular, if we have a constraint \(C(\vx) = 0\), we approximate the constraint by a first-order Taylor expansion:
   \[
-  C(\vx + \Delta\vx) \approx C_1(\Delta\vx) = C(\vx_0) + \nabla C(\vx_0) \Delta\vx.
+  C(\vx_0 + \Delta\vx) \approx C_1(\Delta\vx) = C(\vx_0) + \nabla C(\vx_0) \Delta\vx.
   \]
   The minimum solution to \(C_1(\Delta\vx) = 0\) is a multiple of the gradient \(\nabla C\):
   \[
@@ -51,7 +51,7 @@
   \]
   Since each constraint only depends on a few particles' positions, this notation expands to a separate projection rule for each particle participating in the constraint:
   \[
-  \Delta\vp_i = -\frac{C(\vp_1, \ldots, \vp_n)}{\sum_j\|\nabla_{\vp_j} C(\vp_1, \ldots, \vp_n)\|^2}\nabla C(\vp_1, \ldots, \vp_n)
+  \Delta\vp_i = -\frac{C(\vp_1, \ldots, \vp_n)}{\sum_j\|\nabla_{\vp_j} C(\vp_1, \ldots, \vp_n)\|^2}\nabla_{\vp_i} C(\vp_1, \ldots, \vp_n)
   \]
   where the \(\vp\)s in this case denote the current positions of the particles.
 </p>
