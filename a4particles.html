@@ -111,13 +111,29 @@
         <ol>
           <li>Implement <tt>SympEulerIntegrator</tt> following the example of <tt>FwdEulerIntegrator</tt>.  This is pretty simple to do, since these two integrators have extremely similar implementations.  You should find, however, that the symplectic integrator is vastly better behaved.</li>
           <li>Add to the interface of <tt>Constraint</tt>, following the example of <tt>Force</tt>, to provide the functionality needed by the position based integrator.  Implement this interface for all the <tt>Constraint</tt> subclasses.</li>
-          <li>Implement <tt>PositionBasedIntegrator::timestep</tt>, following the M&uuml;ller paper.   This implementation starts off following the symplectic Euler method, but differs in two ways.  First, forces that are also <tt>Constraint</tt>s are skipped in the force accumulation phase.  Then, after the symplectic Euler step, the forces that are <tt>Constraint</tt>s apply the constraint projection step to the particles they affect.  You should loop over the constraints <tt>numIterations</tt> times, then compute new velocities from the original (pre-Euler-step) and final (post-constraint-projection) positions.</li>
+          <li>Implement <tt>PositionBasedIntegrator::timestep</tt>, following the M&uuml;ller paper.   This implementation starts off following the symplectic Euler method, but differs in two ways.  First, forces that are also <tt>Constraint</tt>s are skipped in the force accumulation phase.  Then, after the symplectic Euler step, the forces that are <tt>Constraint</tt>s apply the constraint projection step to the particles they affect.  You should loop over the constraints <tt>numIterations</tt> times, then compute new velocities from the original (pre-Euler-step) and final (post-constraint-projection) positions. You do not need to implement velocity damping or collision constraints. Essentially, you should implement steps (5), (7), and (9)-(15) of the algorithm in section 3.1 of [M&uuml;ller et al. 2006].</li>
         </ol>
       </p>
 
       <p>When you have the position-based integrator working, you should find that it can provide very stiff behavior for cloth or rods with larger timesteps and less overall work per frame (i.e. higher FPS reading) than is possible with the symplectic Euler method.</p>
 
-      <p><i>Hints</i>: You can use <tt>dynamic_cast</tt> to determine which forces can be treated as constraints in the position based integrator.  You can use the methods <tt>ParticleSystem.{get,set}{Positions,Velocities}</tt> to save the starting positions before you modify them in the Euler step, compute the velocities with an Eigen vector subtraction, and write the velocities back to the particles.
+      <p><i>Implementation details</i>:
+        <ul>
+          <li>You can use <tt>dynamic_cast</tt> to determine which forces can be treated as constraints in the position based integrator.</li>
+          <li>You can use the methods <tt>ParticleSystem.{get,set}{Positions,Velocities}</tt> to save the starting positions before you modify them in the Euler step, compute the velocities with an Eigen vector subtraction, and write the velocities back to the particles.</li>
+          <li>The constraint stiffnesses are specified in the <tt>Constraint</tt> subclasses with the <tt>kConst</tt> member. You should make the effect of this parameter linear with respect to <tt>numIterations</tt> by applying the stiffness transformation as described in section 3.3 of [M&uuml;ller et al. 2006]: \(k' = 1 - (1 - k)^{1/n_s}\). </li>
+          <li>You might notice that, for particular constraints, the constraint gradients become 0 when the constraint is satisfied. This may cause an issue when calculating the position update to apply, as you divide by the sum of the squared lengths of these gradients. When these are all 0, this may introduce <tt>NaN</tt>s into the simulation. To avoid this, you can first check if the constraint is satisfied (up to some epsilon value) and skip the position update if so.</li>
+          <li>Your program will likely run very slowly. This is because, by default, the program runs in debug mode. In this mode, Eigen performs many run-time checks to make sure matrix operations are valid (e.g., so it can throw an error if you added two vectors of different sizes). To skip these checks, you'll need to compile your program with optimization. CMake provides <tt>Release</tt> and <tt>RelWithDebInfo</tt> configurations for this purpose. If you're compiling your program using <tt>make</tt>, you can run <tt>cmake</tt> with the <tt>-DCMAKE_BUILD_TYPE=RelWithDebInfo</tt> command line argument. If you're using an IDE, CMake provides multiple configurations so that you can choose your build type from within the IDE; check the CMake documentation for details.</li>
+        </ul>
+      </p>
+
+      <p><i>Things to watch for</i>:
+        <ul>
+          <li>Which integration methods do the least amount of work per timestep?</li>
+          <li>Which integration methods are the most stable at large timesteps?</li>
+          <li>For each integration method, does the effective stiffness of the simulated object depend on the timestep?</li>
+        </ul>
+      </p>
 
     
       <h3 id="what-to-submit">What to Submit</h3>
