@@ -27,9 +27,9 @@
   Our simulator actually supports four types of influences on particles, which we generically call "forces" even though they are not always literally implemented with forces:
   <ol>
     <li>Gravity: a unary, constant force \(f = mg\) where \(f\) is the force (of gravity) on a particle, \(m\) is the particle's mass, and \(g\) is the acceleration of gravity.  It is always treated as a force, not a constraint.</li>
-    <li>Pin: a unary force that pulls a particle towards a fixed location.  Its constraint equation is \(C(\vp) = \|\vp - \vp_0\|^2\) where \(\vp\) is the position of the particle and \(\vp_0\) is a fixed position.</li>
+    <li>Pin: a unary force that pulls a particle towards a fixed location.  Its constraint equation is \(C(\vp) = \|\vp - \vp_0\|\) where \(\vp\) is the position of the particle and \(\vp_0\) is a fixed position.</li>
     <li>Stretching: a binary force that pushes a pair of particles towards a fixed separation distance.  Its constraint equation is \[
-      C(\vp_i, \vp_j) = \frac{\|\vp_i - \vp_j\|}{l} - 1,
+      C(\vp_i, \vp_j) = \|\vp_i - \vp_j\| - l,
     \] where \(\vp_i\) and \(\vp_j\) are the positions of the two particles affected by the constraint and \(l\) is th rest length of the spring.</li>
     <li>Bending: a ternary force that pushes three particles towards  collinear configurations.  Its constraint equation is \[
       C(\vp_i, \vp_j, \vp_k) = \frac{\vp_j - \vp_i}{\|\vp_j - \vp_i\|} \cdot \frac{\vp_k - \vp_j}{\|\vp_k - \vp_j\|} - 1.
@@ -61,7 +61,7 @@
 <p>
   For the written part, we ask you to derive the formulas needed to implement the two methods for pin, stretching, and bending forces.  For each of these three forces, start from the constraint equations above and derive the equations required for implementation:
   <ol>
-    <li>For each force write down the corresponding energy, and derive an expression for the force on each particle as a function of the position(s) of the particle(s) involved in the constraint.  Show how you obtained these equations, and verify they are equivalent to what is in the code for the Newtonian particle system.
+    <li>For each force write down the corresponding energy, and derive an expression for the force on each particle as a function of the position(s) of the particle(s) involved in the constraint.  Show how you obtained these equations, and verify they are equivalent to what is in the code for the Newtonian particle system.  (Note that the code in the framework also includes a damping term that is proportional to velocity; you can ignore this in the comparison.  That is, the forces should match when velocity is zero.)
     </li>
     <li>For each force compute the gradient of the constraint with respect to the particle position(s) and derive the constraint projection equations that you will use to implement position based dynamics in the programming part.  Show how you obtained these equations, and for the binary spring force verify they are equivalent to the equations given by M&uuml;ller et al.
     </li>
