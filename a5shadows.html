@@ -1,0 +1,58 @@
+<script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+\(\newcommand{\vx}{\mathbf{x}}\)
+\(\newcommand{\vp}{\mathbf{p}}\)
+\(\newcommand{\vf}{\mathbf{f}}\)
+\(\newcommand{\ve}{\mathbf{e}}\)
+\(\newcommand{\vv}{\mathbf{v}}\)
+\(\newcommand{\vC}{\mathbf{C}}\)
+\(\newcommand{\th}{^\text{th}}\)
+
+<p><strong>Due: April 30 2019 (11:59pm).</strong> Work on your own or in groups of 2, as you prefer.</p>
+
+<p>
+  In this assignment you will add support for shadows to a rendering system similar to (but a bit simpler than) the one you built for the Shading assignment.  We supply you with a working deferred renderer that support only unshadowed point lights, and some scenes that use spotlights; your job is to implement the spotlights so that they cast shadows, using shadow maps.
+
+
+<h2>Introduction</h2>
+
+<p>
+  Shadow maps require lights to have a limited &ldquo;field of view&rdquo; (otherwise we need to use multiple maps per source), so in this assignment only <i>spot lights</i> cast shadows.  The model import code maps spot lights in the input file to instances of the class <tt>SpotLight</tt>, which adds information about the direction and cone angle to the <tt>PointLight</tt> class.  These lights become spotlights that illuminate a square pyramid for which the angle between opposite sides is equal to the cone angle.
+</p>
+<p>
+  The framework uses a deferred shading approach like the Shading assignment; in the first pass the G-Buffers are filled with information required for shading, including the normal and material properties.  (Only isotropic materials are supported, which makes things a bit simpler.)  In the second pass we compute shading from all the point light sources in the scene.  Your job is to add an additional illumination phase that does an additional shading pass for each spotlight in the scene.  Each spotlight requires two passes: first, render the shadow map for one spotlight; and second, add the illumination from that light into the output buffer.
+</p>
+<h2>Rendering shadow maps</h2>
+<p>
+  Implementing the shadow-map pass requires some additional work in the C++ code, together with a new (but very simple) shader program.  Here are the steps we followed (you will find TODOs for these but feel free to deviate from this plan if you prefer).
+  <ol>
+    <li>At initialization time in <tt>ShadowsApp</tt>, when you create the <tt>GLFramebuffer</tt> for the G-Buffer, create a second similar <tt>GLFramebuffer</tt> for shadow mapping.  This second FBO does not need any color attachment, only a depth attachment.  The framework provides a slider-adjustable class member variable <tt>shadowMapResolutionExponent</tt>, and the dimension of the shadow map depth texture should be <tt>1 &lt;&lt; shadowMapResolutionExponent</tt> (it can be always square).</li>
+    <li>Write a vertex and fragment shader for shadow map rendering.  The vertex shader needs to transform points from object space to light space, and the fragment shader can do absolutely nothing.  You will need to use a uniform matrix or matrices to transform points from object space, through model, light-view, and light-projection matrices, to light space; other than the names of the matrices the shader is identical to a standard vertex shader that supports no extra vertex attributes.  At initialization time you'll need to compile this program in the same way as the &uuml;bershader.</li>
+    <li>In <tt>ShadowsApp::drawContents</tt>, add a third shading pass before the &ldquo;render to screen&rdquo; pass.  In this pass (for now just for the first <tt>SpotLight</tt> in the scene, if there are any), render the shadow map.  This means binding your shadow FBO, binding your shadow program, and rendering the scene using the same mechanism that is used in the first pass.  However, when you call <tt>glDrawBuffers</tt> you will just pass one buffer with the value <tt>GL_NONE</tt> to indicate there is no color buffer being used.  Like the first pass you need to enable the depth test.  You will need a way to provide the uniform matrices to the vertex shader.  We did this by creating a member function <tt>setSpotLightUniforms</tt> that operates analogously to <tt>setLightUniforms</tt> but computes and sets the light's projection and viewing matrices.  You will also need to provide a way to bind the shadow shader program instead of the &uuml;bershader program when drawing, and to provide the appropriate uniforms; we did this by modifying renderNode, passing a flag down the recursion that indicates whether this is the render or shadow pass.</li>
+  </ol>
+  When you are done with this you will be able to use the framework's &ldquo;show shadow buffer&rdquo; feature to see a depth map from the light's point of view.  This map should not change when you move the camera, but it should change when you move the light source using the controls in the panel.
+</p>
+
+<h2>Adding the illumination pass</h2>
+<p>
+  (Needs to be fleshed out) Add the illumination pass.
+  <ul>
+    <li>Render a full screen quad with the ubershader, just like the deferred pass.  Enable additive blending.</li>
+    <li>Put spot light info into uniforms, sufficient to do the shading.</li>
+    <li>Add a flag to the ubershader that lets it tell whether to render spot or point lights, or make a separate shader.</li>
+    <li>Extend the ubershader so that it performs a shadow map lookup.  First get this working using a plain sampler2D, then modify it to use a shadowSampler2D to get free interpolation.  Advice on setting up parameters.
+  </ul>
+</p>
+
+      <p><i>Things to watch for</i>:
+        <ul>
+          <li>...</li>
+        </ul>
+      </p>
+
+    
+      <h3 id="what-to-submit">What to Submit</h3>
+
+      <p>You should submit a ZIP file containing all the source codes and data in the <tt>Particles</tt> directory.  All the code you have written should be well commented and easy to read, and header comments for all modified files should appropriately indicate authorship.  Be sure to cite sources for any code or formulas that came from anywhere other than your head or this assignment document.  Also, put in the directory a README file explaining any implementation choices you made or difficulties you encountered.</p>
