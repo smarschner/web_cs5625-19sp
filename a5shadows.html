@@ -51,8 +51,22 @@
       </ul>
     </li>
   </ol>
-  When you are done with this you will be able to use the framework's &ldquo;show shadow buffer&rdquo; feature to see a depth map from the light's point of view.  This map should not change when you move the camera, but it should change when you move the light source using the controls in the panel.
 </p>
+
+<p>
+  When you are done with this you will be able to use the framework's &ldquo;show shadow buffer&rdquo; feature to see a depth map from the light's point of view.  This map should not change when you move the camera, but it should change when you move the light source using the controls in the panel. Below are some examples of what you might see, though bear in mind that your program might look slightly different depending on how you choose your up vector. Also, the scenes might look slightly squashed; this is expected, because we are rendering a square texture into a rectangular screen.
+</p>
+
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/a5/box-shadow-buffer.png"><img src="images/a5/box-shadow-buffer.png" / width="300"></a></td>
+    <td align="center"><a href="images/a5/tree-shadow-buffer.png"><img src="images/a5/tree-shadow-buffer.png" / width="300"></a></td>
+  </tr>
+  <tr>
+    <td align="center">Box Scene Shadow Buffer</td>
+    <td align="center">Tree Scene Shadow Buffer</td>
+  </tr>
+</table>
 
 <h2>Adding the illumination pass</h2>
 <p>
@@ -87,20 +101,39 @@
         <li>Change the call to <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/texture.xhtml"><tt>texture()</tt></a> that you are using to sample the depth texture.  With a shadow sampler, rather than reading a single shadow-map depth and comparing it to the surface depth yourself, you pass in the surface depth and the sampler tells you how many of the neighboring texels pass the shadow test, by returning a fractional value between 0 and 1.  The texture coordinates and the comparison value are passed in the <tt>xy</tt> and <tt>z</tt> components, respectively, of the <tt>vec3</tt> argument to <tt>texture</tt>.</li>
         <li>Enable depth comparison from the C++ side.  Use <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexParameter.xhtml"><tt>glTexParameteri</tt></a> to set the parameter <tt>GL_TEXTURE_COMPARE_MODE</tt> to <tt>GL_COMPARE_REF_TO_TEXTURE</tt> and the parameter <tt>GL_TEXTURE_MAG_FILTER</tt> to <tt>GL_LINEAR</tt>.</li>
       </ul>
-      At this point, your shadows should look clean, smooth, and sharp when the resolution is high enough (and cone angle low enough), and somewhat blurry when the resolution is lower.  That is a basic shadow map!
+      At this point, your shadows should look clean, smooth, and sharp when the resolution is high enough (and cone angle low enough), and somewhat blurry when the resolution is lower. That is a basic shadow map! See below for some example images from our solution.
   </ul>
 </p>
 
-      <p><i>Things to watch for</i>:
-        <ul>
-          <li>To get smooth shadow boundaries, when is it better to decrease the cone angle, and when is it better to increase the shadow map resolution?</li>
-          <li>In the Box scene, how does bias affect the shadow at the point of contact with the ground plane?</li>
-          <li>Why do we use a bias that has a constant component and an angle-dependent component?</li>
-          <li>In this assignment, the edges of the cast shadows will be fairly sharp. How might you go about implementing softer shadow edges?</li>
-        </ul>
-      </p>
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/a5/box.png"><img src="images/a5/box.png" / width="300"></a></td>
+    <td align="center"><a href="images/a5/sphere.png"><img src="images/a5/sphere.png" / width="300"></a></td>
+  </tr>
+  <tr>
+    <td align="center">Box Scene</td>
+    <td align="center">Sphere Scene</td>
+  </tr>
+    <tr>
+    <td align="center"><a href="images/a5/multilight.png"><img src="images/a5/multilight.png" / width="300"></a></td>
+    <td align="center"><a href="images/a5/tree.png"><img src="images/a5/tree.png" / width="300"></a></td>
+  </tr>
+  <tr>
+    <td align="center">Multilight Scene</td>
+    <td align="center">Tree Scene</td>
+  </tr>
+</table>
 
-    
-      <h3 id="what-to-submit">What to Submit</h3>
+<p><i>Things to watch for</i>:
+  <ul>
+    <li>To get smooth shadow boundaries, when is it better to decrease the cone angle, and when is it better to increase the shadow map resolution?</li>
+    <li>In the Box scene, how does bias affect the shadow at the point of contact with the ground plane?</li>
+    <li>Why do we use a bias that has a constant component and an angle-dependent component?</li>
+    <li>In this assignment, the edges of the cast shadows will be fairly sharp. How might you go about implementing softer shadow edges?</li>
+  </ul>
+</p>
 
-      <p>You should submit a ZIP file containing all the source codes and data in the <tt>Shadows</tt> and <tt>resources/Shadows/shaders</tt> directories.  All the code you have written should be well commented and easy to read, and header comments for all modified files should appropriately indicate authorship.  Be sure to cite sources for any code or formulas that came from anywhere other than your head or this assignment document.  Also, put in the directory a README file explaining any implementation choices you made or difficulties you encountered.</p>
+
+<h3 id="what-to-submit">What to Submit</h3>
+
+<p>You should submit a ZIP file containing all the source codes and data in the <tt>Shadows</tt> and <tt>resources/Shadows/shaders</tt> directories.  All the code you have written should be well commented and easy to read, and header comments for all modified files should appropriately indicate authorship.  Be sure to cite sources for any code or formulas that came from anywhere other than your head or this assignment document.  Also, put in the directory a README file explaining any implementation choices you made or difficulties you encountered.</p>
