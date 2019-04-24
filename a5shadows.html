@@ -26,14 +26,26 @@
 </p>
 <h2>Rendering shadow maps</h2>
 <p>
-  Implementing the shadow-map pass requires some additional work in the C++ code, together with a new (but very simple) shader program.  Here are the steps we followed (you will find TODOs for these but feel free to deviate from this plan if you prefer).
+  Implementing the shadow-map pass requires some additional work in the C++ code, together with a new (but very simple) shader program.  You'll find that <tt>ShadowsApp</tt> already contains a <tt>GLFramebuffer</tt> called <tt>shadowBuffer</tt> that is set up with a depth attachment but no color attachment.  It is automatically reallocated as the user adjusts the shadow map resolution using the slider.
+</p>
+<p>
+  Here are the steps we followed to implement shadow map rendering.  You will find TODOs for these but feel free to deviate from this plan if you prefer.
   <ol>
-    <li>At initialization time in <tt>ShadowsApp</tt>, when you create the <tt>GLFramebuffer</tt> for the G-Buffer, create a second similar <tt>GLFramebuffer</tt> for shadow mapping.  This second FBO does not need any color attachment, only a depth attachment.  The framework provides a slider-adjustable class member variable <tt>shadowMapResolutionExponent</tt>, and the dimension of the shadow map depth texture should be <tt>1 &lt;&lt; shadowMapResolutionExponent</tt> (it can be always square).</li>
-    <li>Write a vertex and fragment shader for shadow map rendering.  The vertex shader needs to transform points from object space to light space, and the fragment shader can do absolutely nothing.  You will need to use a uniform matrix or matrices to transform points from object space, through model, light-view, and light-projection matrices, to light space; other than the names of the matrices the shader is identical to a standard vertex shader that supports no extra vertex attributes.  At initialization time you'll need to compile this program in the same way as the &uuml;bershader.</li>
-    <li>In <tt>ShadowsApp::drawContents</tt>, add a third shading pass before the &ldquo;render to screen&rdquo; pass.  In this pass (for now just for the first <tt>SpotLight</tt> in the scene, if there are any), render the shadow map.  This means binding your shadow FBO, binding your shadow program, and rendering the scene using the same mechanism that is used in the first pass.  However, when you call <tt>glDrawBuffers</tt> you will just pass one buffer with the value <tt>GL_NONE</tt> to indicate there is no color buffer being used.  Like the first pass you need to enable the depth test.
+    <li>Write a vertex and a fragment shader for shadow map rendering.  The vertex shader needs to transform points from object space to light space, and the fragment shader can do absolutely nothing.  You will need to use a uniform matrix or matrices to transform points from object space, through model, light-view, and light-projection matrices, to light space; other than the names of the matrices the shader is identical to a standard vertex shader that supports no extra vertex attributes.  At initialization time you'll need to compile this program in the same way as the &uuml;bershader.</li>
+    <li>In <tt>ShadowsApp::drawContents</tt>, add a third shading pass before the &ldquo;render to screen&rdquo; pass.  In this pass (for now just for the first <tt>SpotLight</tt> in the scene, if there are any), render the shadow map.  This means binding <tt>shadowBuffer</tt>, binding your shadow program, and rendering the scene using the same mechanism that is used in the first pass.  However, when you call <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glDrawBuffers.xhtml"><tt>glDrawBuffers</tt></a> you will just pass one buffer with the value <tt>GL_NONE</tt> to indicate there is no color buffer being used.  Like the first pass you need to enable the depth test.
       <ul>
-        <li>You will need a way to provide the uniform matrices to the vertex shader.  We did this by creating a member function <tt>setSpotLightUniforms</tt> that operates analogously to <tt>setLightUniforms</tt> but computes and sets the light's projection and viewing matrices. To build these matrices, make use of the <tt>spotLightNear</tt> and <tt>spotLightFar</tt> variables, which encode the distance to the near and far planes for each spot light projection matrix. The field of view of the spotlight is available via <tt>SpotLight::getConeAngle()</tt> (keep in mind this is the full FOV angle, not the half angle). Multiply this angle by <tt>coneAngleAdjustment</tt> and clamp it to reasonable values before using it. Additionally, to move the light around the scene, you'll want to rotate the spotlight around the world's origin, as defined in spherical coordinates by <tt>spotLightThetaAdjustment</tt> (an angle in the range \([-\pi, \pi]\)) and <tt>spotLightPhiAdjustment</tt> (an angle in the range \([-\frac{\pi}{2}, \frac{\pi}{2}]\)). You'll also need to define an "up" direction for the spotlight; any method of determining an up vector is fine.</li>
-        <li>You will also need to provide a way to bind the shadow shader program instead of the &uuml;bershader program when drawing, and to provide the appropriate uniforms; we did this by modifying <tt>renderNode</tt>, passing a flag down the recursion that indicates whether this is the render or shadow pass.</li>
+        <li>
+          You will need to write some code to compute viewing and projection matrices for spotlights.  This computation is exactly like a perspective camera, and you might like to borrow from the implementation of <tt>PerspectiveCamera</tt>. Note that the light's direction and position are in the local space of the light's scene node, so you will need to account for that node's modeling matrix; you can find the node using <tt>light-&gt;getNode()</tt>.</li>
+        <li>
+          You will need an &ldquo;up&rdquo; direction to compute the viewing matrix for the light.  Any method of determining an up vector is fine, though ideally it should not break regardless of the light's direction.  To allow the user to lights around in the scene, you'll want to rotate the spotlight around the world's origin, as defined in spherical coordinates by <tt>spotLightThetaAdjustment</tt> (an angle in the range \([-\pi, \pi]\)) and <tt>spotLightPhiAdjustment</tt> (an angle in the range \([-\frac{\pi}{2}, \frac{\pi}{2}]\)).</li>
+        <li>
+          You will need a field of view for the projection matrix.  The field of view of the spotlight is available via <tt>SpotLight::getConeAngle()</tt> (keep in mind this is the full FOV angle, not the half angle).  To allow for slider adjustments to this angle, multiply it by the member variable <tt>coneAngleAdjustment</tt> and clamp it to reasonable values before using it.
+        <li>
+          You will need near and far distances for the projection matix.  Make use of the slider-adjustable <tt>spotLightNear</tt> and <tt>spotLightFar</tt> variables, which are meant to apply to all spot lights in the scene.</li>
+        <li>
+          You will need a way to provide these matrices to the vertex shader.  We did this by creating a member function <tt>setSpotLightUniforms</tt> that operates analogously to <tt>setLightUniforms</tt> but takes a <tt>SpotLight</tt> rather than a <tt>Scene</tt>, computes that light's projection and viewing matrices, and uploads them to uniforms.</li>
+        <li>
+          You will also need to provide a way to bind the shadow shader program instead of the &uuml;bershader program when drawing, and to provide the modeling matrix of each node to the shader as it's drawn; we did this by modifying <tt>renderNode</tt>, passing a flag down the recursion that indicates whether this is the render or shadow pass.</li>
       </ul>
     </li>
   </ol>
@@ -42,12 +54,38 @@
 
 <h2>Adding the illumination pass</h2>
 <p>
-  (Needs to be fleshed out) Add the illumination pass.
+  Once you have shadow depth maps rendering, you can use them to make shadows!  This is mainly a matter of shader programming.  As sketched out above, you should use the strategy of rendering each spotlight in a separate deferred shading pass, after the existing rendering pass that accounts for all other sources of light.  Using separate passes per light means you can reuse one shadow map for all the lights, and the shader only needs to have access to one shadow map at a time.
+</p>
+<p>
+  There is a design decision here: use the same &uuml;bershader for illumination passes as for the initial pass, or use two separate shaders.  The tradeoff is repeated code and managing an extra shader program vs. clunkiness associated with having parts of the shader inactive in each pass.  We used the single-shader approach.
+</p>
+<p>
+  This part of the implementation is mainly shader programming, though you do need to add the C++ code that orchestrates the illumination pass.  Here are the steps we followed.
   <ul>
-    <li>Render a full screen quad with the ubershader, just like the deferred pass.  Enable additive blending.</li>
-    <li>Put spot light info into uniforms, sufficient to do the shading.</li>
-    <li>Add a flag to the ubershader that lets it tell whether to render spot or point lights, or make a separate shader.</li>
-    <li>Extend the ubershader so that it performs a shadow map lookup.  First get this working using a plain sampler2D, then modify it to use a shadowSampler2D to get free interpolation.  Advice on setting up parameters.
+    <li>First, get unshadowed rendering in multiple illumination passes working.  For now you can leave your shadow map rendering code alone or comment it out.
+      <ul>
+        <li>Add the illumination pass to <tt>drawContents</tt>.  This pass happens in a loop over all spotlights in the scene, and from the C++ side it is nearly identical to the first &uuml;bershader pass (Pass 2).  The key differences are that you do not clear the buffer (since you want to accumulate into it), and you need to enable additive blending using <tt>glEnable</tt> and <tt>glBlendFunc</tt> (don't forget to disable it afterwards!).</li>
+        <li>Work out a way to provide the spotlight information to uniforms in your shader; you'll need the position, color, and attenuation just as for point lights.  We did this by extending our <tt>setSpotLightUniforms</tt> method.  Remember you only need to have the information about one spotlight at a time, since you run the shader program once for every spotlight.</li>
+        <li>In the shader, compute lighting from the spotlight just like it already does for point lights, and write the result into the fragment color; because you have additive blending set up, it will be added to the color already present in the <tt>srgbBuffer</tt>.</li>
+      </ul>
+      At this point you should be able to see renderings of all the scenes that are fine but don't have shadows.
+    </li>
+    <li>Second, add (aliased) shadows.
+      <ul>
+        <li>Put your shadow-map rendering code in the loop over spotlights, so that you render a shadow map for each light before you run its illumination pass.</li>
+        <li>Arrange to provide the shadow map texture to the shader in the spotlight illumination pass.  Provide it through a <tt>sampler2D</tt> uniform just like any other texture; a depth texture's single component shows up in the first (red) component when you do a texture lookup.</li>
+        <li>Work out a way to provide the same light-view and light-projection matrices as in the shadow map pass as uniforms in this illumination pass, as well as the shader-adjustable <tt>shadowConstantBias</tt> and <tt>shadowAngleBias</tt>.
+        <li>Extend your shader to test for shadows.  We wrote a <tt>shadowFactor</tt> subroutine that returns a floating point number 0 or 1 to be multiplied with the light's shading contribution.  Take the shading point (which the &uuml;bershader already computes in eye space) and transform it into light space (you will need to work out a way to get it into the same space where your light-view matrix operates).  Don't forget the perspective divide.  Use the <tt>x</tt> and <tt>y</tt> components of this point to look up into the shadow map (don't forget about the difference between \([-1,1]^3\) NDC and \([0,1]^2\) texture coordinates).  Use the <tt>z</tt> coordinate of the light-space point to perform a shadow depth comparison (don't forget about the difference between \([-1,1]^3\) NDC and the \([0,1]\) range of a texture lookup).  With this correctly implemented you will see shadows with some artifacts.</li>
+        <li>Implement shadow bias to remove the discretization artifacts.  Bias the depth value by \(a + b\tan\theta\) before the shadow test, where \(a\) is the constant bias, \(b\) is the angle-dependent bias, and \(\theta\) is the angle between the surface normal and light direction.</li>
+      </ul>
+      At this point you should have reasonably clean shadows, but with blocky and aliased shadow boundaries.
+    <li>Third, add percentage-closer filtering.  This is a matter of turning it on, since the texture unit already knows how to do it.
+      <ul>
+        <li>Change the type of the uniform for the shadow depth texture to <a href="https://www.khronos.org/opengl/wiki/Sampler_(GLSL)#Shadow_samplers"><tt>sampler2DShadow</tt></a>.</li>
+        <li>Change the call to <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/texture.xhtml"><tt>texture()</tt></a> that you are using to sample the depth texture.  With a shadow sampler, rather than reading a single shadow-map depth and comparing it to the surface depth yourself, you pass in the surface depth and the sampler tells you how many of the neighboring texels pass the shadow test, by returning a fractional value between 0 and 1.  The texture coordinates and the comparison value are passed in the <tt>xy</tt> and <tt>z</tt> components, respectively, of the <tt>vec3</tt> argument to <tt>texture</tt>.</li>
+        <li>Enable depth comparison from the C++ side.  Use <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexParameter.xhtml"><tt>glTexParameteri</tt></a> to set the parameter <tt>GL_TEXTURE_COMPARE_MODE</tt> to <tt>GL_COMPARE_REF_TO_TEXTURE</tt> and the parameter <tt>GL_TEXTURE_MAG_FILTER</tt> to <tt>GL_LINEAR</tt>.</li>
+      </ul>
+      At this point, your shadows should look clean, smooth, and sharp when the resolution is high enough (and cone angle low enough), and somewhat blurry when the resolution is lower.  That is a basic shadow map!
   </ul>
 </p>
 
