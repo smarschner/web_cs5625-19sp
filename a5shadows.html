@@ -22,7 +22,7 @@
   Shadow maps require lights to have a limited &ldquo;field of view&rdquo; (otherwise we need to use multiple maps per source), so in this assignment only <i>spot lights</i> cast shadows.  The model import code maps spot lights in the input file to instances of the class <tt>SpotLight</tt>, which adds information about the direction and cone angle to the <tt>PointLight</tt> class.  These lights become spotlights that illuminate a square pyramid for which the angle between opposite sides is equal to the cone angle.
 </p>
 <p>
-  The framework uses a deferred shading approach like the Shading assignment; in the first pass the G-Buffers are filled with information required for shading, including the normal and material properties.  (Only isotropic materials are supported, which makes things a bit simpler.)  In the second pass we compute shading from all the point light sources in the scene.  Your job is to add an additional illumination phase that does an additional shading pass for each spotlight in the scene.  Each spotlight requires two passes: first, render the shadow map for one spotlight; and second, add the illumination from that light into the output buffer.
+  The framework uses a deferred shading approach like the Shading assignment; in the first pass the G-Buffers are filled with information required for shading, including the normal and material properties.  (Only isotropic microfacet materials are supported, which makes things a bit simpler.)  In the second pass we compute shading from all the point light sources in the scene.  Your job is to add an additional illumination phase that does an additional shading pass for each spotlight in the scene.  Each spotlight requires two passes: first, render the shadow map for one spotlight; and second, add the illumination from that light into the output buffer.
 </p>
 <h2>Rendering shadow maps</h2>
 <p>
@@ -37,11 +37,13 @@
         <li>
           You will need to write some code to compute viewing and projection matrices for spotlights.  This computation is exactly like a perspective camera, and you might like to borrow from the implementation of <tt>PerspectiveCamera</tt>. Note that the light's direction and position are in the local space of the light's scene node, so you will need to account for that node's modeling matrix; you can find the node using <tt>light-&gt;getNode()</tt>.</li>
         <li>
-          You will need an &ldquo;up&rdquo; direction to compute the viewing matrix for the light.  Any method of determining an up vector is fine, though ideally it should not break regardless of the light's direction.  To allow the user to lights around in the scene, you'll want to rotate the spotlight around the world's origin, as defined in spherical coordinates by <tt>spotLightThetaAdjustment</tt> (an angle in the range \([-\pi, \pi]\)) and <tt>spotLightPhiAdjustment</tt> (an angle in the range \([-\frac{\pi}{2}, \frac{\pi}{2}]\)).</li>
+          You will need an &ldquo;up&rdquo; direction to compute the viewing matrix for the light.  Any method of determining an up vector is fine, though ideally it should not break regardless of the light's direction.</li>
         <li>
-          You will need a field of view for the projection matrix.  The field of view of the spotlight is available via <tt>SpotLight::getConeAngle()</tt> (keep in mind this is the full FOV angle, not the half angle).  To allow for slider adjustments to this angle, multiply it by the member variable <tt>coneAngleAdjustment</tt> and clamp it to reasonable values before using it.
+          To allow the user to move lights around in the scene, you'll want to rotate the spotlight around the world's origin, as defined in spherical coordinates by <tt>spotLightThetaAdjustment</tt> (an angle in the range \([-\pi, \pi]\)) and <tt>spotLightPhiAdjustment</tt> (an angle in the range \([-\frac{\pi}{2}, \frac{\pi}{2}]\)). To ease construction of this rotation, we've provided you with the method <tt>getSpotLightRotation()</tt>.</li>
         <li>
-          You will need near and far distances for the projection matix.  Make use of the slider-adjustable <tt>spotLightNear</tt> and <tt>spotLightFar</tt> variables, which are meant to apply to all spot lights in the scene.</li>
+          You will need a field of view for the projection matrix.  The field of view of the spotlight is available via <tt>SpotLight::getConeAngle()</tt> (keep in mind this is the full FOV angle, not the half angle).  To allow for slider adjustments to this angle, we multiply it by the member variable <tt>coneAngleAdjustment</tt> and clamp it to reasonable values before using it. These adjustments are done for you in the method <tt>getAdjustedConeAngle()</tt>, which returns the half angle of the cone for a particular light.</li>
+        <li>
+          You will need near and far distances for the projection matrix.  Make use of the slider-adjustable <tt>spotLightNear</tt> and <tt>spotLightFar</tt> variables, which are meant to apply to all spot lights in the scene.</li>
         <li>
           You will need a way to provide these matrices to the vertex shader.  We did this by creating a member function <tt>setSpotLightUniforms</tt> that operates analogously to <tt>setLightUniforms</tt> but takes a <tt>SpotLight</tt> rather than a <tt>Scene</tt>, computes that light's projection and viewing matrices, and uploads them to uniforms.</li>
         <li>
@@ -49,8 +51,22 @@
       </ul>
     </li>
   </ol>
-  When you are done with this you will be able to use the framework's &ldquo;show shadow buffer&rdquo; feature to see a depth map from the light's point of view.  This map should not change when you move the camera, but it should change when you move the light source using the controls in the panel.
 </p>
+
+<p>
+  When you are done with this you will be able to use the framework's &ldquo;show shadow buffer&rdquo; feature to see a depth map from the light's point of view.  This map should not change when you move the camera, but it should change when you move the light source using the controls in the panel. Below are some examples of what you might see, though bear in mind that your program might look slightly different depending on how you choose your up vector. Also, the scenes might look slightly squashed; this is expected, because we are rendering a square texture into a rectangular screen.
+</p>
+
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/a5/box-shadow-buffer.png"><img src="images/a5/box-shadow-buffer.png" / width="300"></a></td>
+    <td align="center"><a href="images/a5/tree-shadow-buffer.png"><img src="images/a5/tree-shadow-buffer.png" / width="300"></a></td>
+  </tr>
+  <tr>
+    <td align="center">Box Scene Shadow Buffer</td>
+    <td align="center">Tree Scene Shadow Buffer</td>
+  </tr>
+</table>
 
 <h2>Adding the illumination pass</h2>
 <p>
@@ -74,28 +90,50 @@
       <ul>
         <li>Put your shadow-map rendering code in the loop over spotlights, so that you render a shadow map for each light before you run its illumination pass.</li>
         <li>Arrange to provide the shadow map texture to the shader in the spotlight illumination pass.  Provide it through a <tt>sampler2D</tt> uniform just like any other texture; a depth texture's single component shows up in the first (red) component when you do a texture lookup.</li>
-        <li>Work out a way to provide the same light-view and light-projection matrices as in the shadow map pass as uniforms in this illumination pass, as well as the shader-adjustable <tt>shadowConstantBias</tt> and <tt>shadowAngleBias</tt>.
+        <li>Work out a way to provide the same light-view and light-projection matrices as in the shadow map pass as uniforms in this illumination pass, as well as the slider-adjustable <tt>shadowConstantBias</tt> and <tt>shadowAngleBias</tt>.
         <li>Extend your shader to test for shadows.  We wrote a <tt>shadowFactor</tt> subroutine that returns a floating point number 0 or 1 to be multiplied with the light's shading contribution.  Take the shading point (which the &uuml;bershader already computes in eye space) and transform it into light space (you will need to work out a way to get it into the same space where your light-view matrix operates).  Don't forget the perspective divide.  Use the <tt>x</tt> and <tt>y</tt> components of this point to look up into the shadow map (don't forget about the difference between \([-1,1]^3\) NDC and \([0,1]^2\) texture coordinates).  Use the <tt>z</tt> coordinate of the light-space point to perform a shadow depth comparison (don't forget about the difference between \([-1,1]^3\) NDC and the \([0,1]\) range of a texture lookup).  With this correctly implemented you will see shadows with some artifacts.</li>
-        <li>Implement shadow bias to remove the discretization artifacts.  Bias the depth value by \(a + b\tan\theta\) before the shadow test, where \(a\) is the constant bias, \(b\) is the angle-dependent bias, and \(\theta\) is the angle between the surface normal and light direction.</li>
+        <li>Implement shadow bias to remove the discretization artifacts.  Bias the depth value by \(a + b\tan\theta\) before the shadow test, where \(a\) is the constant bias, \(b\) is the angle-dependent bias, and \(\theta\) is the angle between the surface normal and light direction. Note that \(\tan\theta\) can grow without bound at grazing angles, so you should clamp this to a reasonable value (say, 10).</li>
       </ul>
       At this point you should have reasonably clean shadows, but with blocky and aliased shadow boundaries.
     <li>Third, add percentage-closer filtering.  This is a matter of turning it on, since the texture unit already knows how to do it.
       <ul>
-        <li>Change the type of the uniform for the shadow depth texture to <a href="https://www.khronos.org/opengl/wiki/Sampler_(GLSL)#Shadow_samplers"><tt>sampler2DShadow</tt></a>.</li>
+        <li>Change the type of the uniform for the shadow depth texture to <a href="https://www.khronos.org/opengl/wiki/Sampler_(GLSL)#Shadow_samplers"><tt>sampler2DShadow</tt></a>. Note that, on the C++ side, you must explicitly set this uniform to a texture unit <em>even if you never read from it!</em> If you don't do this, you will encounter a <tt>GL_INVALID_OPERATION</tt> error.</li>
         <li>Change the call to <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/texture.xhtml"><tt>texture()</tt></a> that you are using to sample the depth texture.  With a shadow sampler, rather than reading a single shadow-map depth and comparing it to the surface depth yourself, you pass in the surface depth and the sampler tells you how many of the neighboring texels pass the shadow test, by returning a fractional value between 0 and 1.  The texture coordinates and the comparison value are passed in the <tt>xy</tt> and <tt>z</tt> components, respectively, of the <tt>vec3</tt> argument to <tt>texture</tt>.</li>
         <li>Enable depth comparison from the C++ side.  Use <a href="https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexParameter.xhtml"><tt>glTexParameteri</tt></a> to set the parameter <tt>GL_TEXTURE_COMPARE_MODE</tt> to <tt>GL_COMPARE_REF_TO_TEXTURE</tt> and the parameter <tt>GL_TEXTURE_MAG_FILTER</tt> to <tt>GL_LINEAR</tt>.</li>
       </ul>
-      At this point, your shadows should look clean, smooth, and sharp when the resolution is high enough (and cone angle low enough), and somewhat blurry when the resolution is lower.  That is a basic shadow map!
+      At this point, your shadows should look clean, smooth, and sharp when the resolution is high enough (and cone angle low enough), and somewhat blurry when the resolution is lower. That is a basic shadow map! See below for some example images from our solution.
   </ul>
 </p>
 
-      <p><i>Things to watch for</i>:
-        <ul>
-          <li>...</li>
-        </ul>
-      </p>
+<table class="table table-bordered">
+  <tr>
+    <td align="center"><a href="images/a5/box.png"><img src="images/a5/box.png" / width="300"></a></td>
+    <td align="center"><a href="images/a5/sphere.png"><img src="images/a5/sphere.png" / width="300"></a></td>
+  </tr>
+  <tr>
+    <td align="center">Box Scene</td>
+    <td align="center">Sphere Scene</td>
+  </tr>
+    <tr>
+    <td align="center"><a href="images/a5/multilight.png"><img src="images/a5/multilight.png" / width="300"></a></td>
+    <td align="center"><a href="images/a5/tree.png"><img src="images/a5/tree.png" / width="300"></a></td>
+  </tr>
+  <tr>
+    <td align="center">Multilight Scene</td>
+    <td align="center">Tree Scene</td>
+  </tr>
+</table>
 
-    
-      <h3 id="what-to-submit">What to Submit</h3>
+<p><i>Things to watch for</i>:
+  <ul>
+    <li>To get smooth shadow boundaries, when is it better to decrease the cone angle, and when is it better to increase the shadow map resolution?</li>
+    <li>In the Box scene, how does bias affect the shadow at the point of contact with the ground plane?</li>
+    <li>Why do we use a bias that has a constant component and an angle-dependent component?</li>
+    <li>In this assignment, the edges of the cast shadows will be fairly sharp. How might you go about implementing softer shadow edges?</li>
+  </ul>
+</p>
+
+
+<h3 id="what-to-submit">What to Submit</h3>
 
       <p>You should submit a ZIP file containing all the source codes and data in the <tt>Shadows</tt> directory.  All the code you have written should be well commented and easy to read, and header comments for all modified files should appropriately indicate authorship.  Be sure to cite sources for any code or formulas that came from anywhere other than your head or this assignment document.  Also, put in the directory a README file explaining any implementation choices you made or difficulties you encountered.</p>
